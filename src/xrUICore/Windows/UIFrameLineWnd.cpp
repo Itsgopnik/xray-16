@@ -142,7 +142,7 @@ void CUIFrameLineWnd::DrawElements()
         if (back_len < 0.0f)
             rect.x2 -= back_len;
 
-        if (back_len > 0.0f)
+        if (back_len > 0.0f && m_tex_rect[flBack].width() > EPS_L)
             prim_count += 6 * iCeil(back_len / m_tex_rect[flBack].width());
     }
     else
@@ -151,7 +151,7 @@ void CUIFrameLineWnd::DrawElements()
         if (back_len < 0)
             rect.y2 -= back_len;
 
-        if (back_len > 0.0f)
+        if (back_len > 0.0f && m_tex_rect[flBack].height() > EPS_L)
             prim_count += 6 * iCeil(back_len / m_tex_rect[flBack].height());
     }
 
@@ -221,6 +221,10 @@ bool CUIFrameLineWnd::inc_pos(
     }
     else // i==flBack
     {
+        if ((bHorizontal && m_tex_rect[flBack].width() < EPS_L) ||
+            (!bHorizontal && m_tex_rect[flBack].height() < EPS_L))
+            return false;
+
         if ((bHorizontal && rect.lt.x + m_tex_rect[flSecond].width() + EPS_L >= rect.rb.x) ||
             (!bHorizontal && rect.lt.y + m_tex_rect[flSecond].height() + EPS_L >= rect.rb.y))
             return false;

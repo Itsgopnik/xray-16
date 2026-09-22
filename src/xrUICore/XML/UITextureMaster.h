@@ -58,6 +58,8 @@ public:
     static bool FindItem(const shared_str& texture_name, TEX_INFO& outValue);
     static bool FindItem(const shared_str& texture_name, pcstr default_texture, TEX_INFO& outValue);
     static bool ItemExist(const shared_str& texture_name);
+    static void RegisterTexture(const shared_str& id, const shared_str& file, const Frect& rect);
+    static void LogAllTextures(pcstr file_filter = nullptr);
 
 protected:
     IC static bool IsSh(const shared_str& texture_name);

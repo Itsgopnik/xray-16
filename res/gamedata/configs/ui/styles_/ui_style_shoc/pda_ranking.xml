@@ -1,0 +1,85 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!--
+    SHoC-style PDA Ranking panel for OpenXRay.
+    Loaded by CUIRankingWnd::Init (UIRankingWnd.cpp:81). Only main_wnd is
+    strictly required (no false fallback at line 88); every other node is
+    optional and short-circuits via UIHelper::Create*(..., false).
+    Layout fits inside SHoC PDA parchment area (~x=20..880, y=70..565).
+    SHoC originally has no Ranking tab — we mirror CoP's character info
+    layout reskinned with SHoC colours/atlas IDs.
+-->
+<w>
+    <main_wnd x="0" y="0" width="1024" height="768" delay="3000"/>
+
+    <!-- Title -->
+    <center_caption x="50" y="85" width="500" height="20">
+        <text align="l" font="letterica18" r="231" g="168" b="12"/>
+    </center_caption>
+
+    <!-- Actor character info: portrait + name + rank + community on the left -->
+    <actor_ch_info x="50" y="120" width="380" height="200">
+        <icon x="0" y="0" width="86" height="118" stretch="1"/>
+
+        <name_static x="100" y="0" width="270" height="22">
+            <text align="l" font="letterica18" r="231" g="168" b="12"/>
+        </name_static>
+
+        <rank_caption x="100" y="28" width="120" height="18">
+            <text align="l" font="letterica16" r="225" g="225" b="250">ui_inv_rank</text>
+        </rank_caption>
+        <rank_static x="225" y="28" width="140" height="18">
+            <text align="l" font="letterica16" r="231" g="168" b="12"/>
+        </rank_static>
+
+        <community_caption x="100" y="50" width="120" height="18">
+            <text align="l" font="letterica16" r="225" g="225" b="250">ui_inv_community</text>
+        </community_caption>
+        <community_static x="225" y="50" width="140" height="18">
+            <text align="l" font="letterica16" r="231" g="168" b="12"/>
+        </community_static>
+
+        <reputation_caption x="100" y="72" width="120" height="18">
+            <text align="l" font="letterica16" r="225" g="225" b="250">ui_inv_reputation</text>
+        </reputation_caption>
+        <reputation_static x="225" y="72" width="140" height="18">
+            <text align="l" font="letterica16" r="231" g="168" b="12"/>
+        </reputation_static>
+    </actor_ch_info>
+
+    <!-- Money line below the character block -->
+    <money_caption x="50" y="245" width="120" height="20">
+        <text align="l" font="letterica18" r="225" g="225" b="250">ui_inv_money</text>
+    </money_caption>
+    <money_value x="175" y="245" width="220" height="20">
+        <text align="l" font="letterica18" r="231" g="168" b="12"/>
+    </money_value>
+
+    <!-- Stats column on the right. Engine reads <stat> nodes by index from <stat_info>. -->
+    <stat_info x="460" y="120" width="400" height="400">
+        <stat x="0" y="0" width="400" height="20">
+            <text align="l" font="letterica18" r="225" g="225" b="250"/>
+        </stat>
+        <stat x="0" y="25" width="400" height="20">
+            <text align="l" font="letterica18" r="225" g="225" b="250"/>
+        </stat>
+        <stat x="0" y="50" width="400" height="20">
+            <text align="l" font="letterica18" r="225" g="225" b="250"/>
+        </stat>
+        <stat x="0" y="75" width="400" height="20">
+            <text align="l" font="letterica18" r="225" g="225" b="250"/>
+        </stat>
+        <stat x="0" y="100" width="400" height="20">
+            <text align="l" font="letterica18" r="225" g="225" b="250"/>
+        </stat>
+        <stat x="0" y="125" width="400" height="20">
+            <text align="l" font="letterica18" r="225" g="225" b="250"/>
+        </stat>
+        <stat x="0" y="150" width="400" height="20">
+            <text align="l" font="letterica18" r="225" g="225" b="250"/>
+        </stat>
+        <stat x="0" y="175" width="400" height="20">
+            <text align="l" font="letterica18" r="225" g="225" b="250"/>
+        </stat>
+        <value r="231" g="168" b="12" a="255"/>
+    </stat_info>
+</w>

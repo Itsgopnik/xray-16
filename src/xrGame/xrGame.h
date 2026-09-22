@@ -17,6 +17,7 @@ extern "C"
 {
 XRGAME_API IFactoryObject* __cdecl xrFactory_Create(CLASS_ID clsid);
 XRGAME_API void __cdecl xrFactory_Destroy(IFactoryObject* O);
+XRGAME_API GameModule* __cdecl xrGameModuleInstance();
 }
 
 class xrGameModule final : public GameModule

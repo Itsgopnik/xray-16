@@ -5,6 +5,7 @@
 #include "xrUICore/XML/xrUIXmlParser.h"
 #include "UIXmlInit.h"
 #include "UIInventoryUtilities.h"
+#include "date_time.h"
 
 #include "Level.h"
 #include "UIGameCustom.h"
@@ -29,7 +30,12 @@
 #include "UIActorInfo.h"
 #include "UIRankingWnd.h"
 #include "UILogsWnd.h"
+#include "UIEncyclopediaWnd.h"
 #include "UIScriptWnd.h"
+#include "UISHoCTaskWnd.h"
+#include "UISHoCDiaryWnd.h"
+#include "UISHoCContactsWnd.h"
+#include "UISHoCRankingWnd.h"
 
 #define PDA_XML "pda.xml"
 
@@ -46,6 +52,11 @@ CUIPdaWnd::CUIPdaWnd() : CUIDialogWnd(CUIPdaWnd::GetDebugType())
     pUIActorInfo = nullptr;
     pUIRankingWnd = nullptr;
     pUILogsWnd = nullptr;
+    pUIEncyclopediaWnd = nullptr;
+    pUISHoCTaskWnd = nullptr;
+    pUISHoCDiaryWnd = nullptr;
+    pUISHoCContactsWnd = nullptr;
+    pUISHoCRankingWnd = nullptr;
     m_hint_wnd = nullptr;
     Init();
 }
@@ -64,6 +75,16 @@ CUIPdaWnd::~CUIPdaWnd()
         delete_data(pUIRankingWnd);
     if (pUILogsWnd)
         delete_data(pUILogsWnd);
+    if (pUIEncyclopediaWnd)
+        delete_data(pUIEncyclopediaWnd);
+    if (pUISHoCTaskWnd)
+        delete_data(pUISHoCTaskWnd);
+    if (pUISHoCDiaryWnd)
+        delete_data(pUISHoCDiaryWnd);
+    if (pUISHoCContactsWnd)
+        delete_data(pUISHoCContactsWnd);
+    if (pUISHoCRankingWnd)
+        delete_data(pUISHoCRankingWnd);
     delete_data(m_hint_wnd);
     if (UINoice)
         delete_data(UINoice);
@@ -119,25 +140,50 @@ void CUIPdaWnd::Init()
         if (!pUIMapWnd->Init("pda_map.xml", "map_wnd", false))
             xr_delete(pUIMapWnd);
 
-        pUITaskWnd = xr_new<CUITaskWnd>(m_hint_wnd);
-        if (!pUITaskWnd->Init())
-            xr_delete(pUITaskWnd);
+        if (ShadowOfChernobylMode)
+        {
+            pUISHoCTaskWnd = xr_new<CUISHoCTaskWnd>(m_hint_wnd);
+            if (!pUISHoCTaskWnd->Init())
+                xr_delete(pUISHoCTaskWnd);
 
-        pUIFactionWarWnd = xr_new<CUIFactionWarWnd>(m_hint_wnd);
-        if (!pUIFactionWarWnd->Init())
-            xr_delete(pUIFactionWarWnd);
+            pUISHoCDiaryWnd = xr_new<CUISHoCDiaryWnd>();
+            if (!pUISHoCDiaryWnd->Init())
+                xr_delete(pUISHoCDiaryWnd);
+
+            pUISHoCContactsWnd = xr_new<CUISHoCContactsWnd>();
+            if (!pUISHoCContactsWnd->Init())
+                xr_delete(pUISHoCContactsWnd);
+
+            pUISHoCRankingWnd = xr_new<CUISHoCRankingWnd>();
+            if (!pUISHoCRankingWnd->Init())
+                xr_delete(pUISHoCRankingWnd);
+        }
+        else
+        {
+            pUITaskWnd = xr_new<CUITaskWnd>(m_hint_wnd);
+            if (!pUITaskWnd->Init())
+                xr_delete(pUITaskWnd);
+
+            pUIFactionWarWnd = xr_new<CUIFactionWarWnd>(m_hint_wnd);
+            if (!pUIFactionWarWnd->Init())
+                xr_delete(pUIFactionWarWnd);
+
+            pUIRankingWnd = xr_new<CUIRankingWnd>();
+            if (!pUIRankingWnd->Init())
+                xr_delete(pUIRankingWnd);
+
+            pUILogsWnd = xr_new<CUILogsWnd>();
+            if (!pUILogsWnd->Init())
+                xr_delete(pUILogsWnd);
+        }
 
         pUIActorInfo = xr_new<CUIActorInfoWnd>();
         if (!pUIActorInfo->Init())
             xr_delete(pUIActorInfo);
 
-        pUIRankingWnd = xr_new<CUIRankingWnd>();
-        if (!pUIRankingWnd->Init())
-            xr_delete(pUIRankingWnd);
-
-        pUILogsWnd = xr_new<CUILogsWnd>();
-        if (!pUILogsWnd->Init())
-            xr_delete(pUILogsWnd);
+        pUIEncyclopediaWnd = xr_new<CUIEncyclopediaWnd>();
+        if (!pUIEncyclopediaWnd->Init())
+            xr_delete(pUIEncyclopediaWnd);
     }
 
     UITabControl = xr_new<CUITabControl>();
@@ -151,9 +197,9 @@ void CUIPdaWnd::Init()
     {
         {"0", "eptTasks"},
         {"1", "eptMap"},
-        {"2", "eptDiary"},
+        {"2", "eptLogs"},
         {"3", "eptContacts"},
-        {"4", "eptStalkersRanking"},
+        {"4", "eptRanking"},
         {"5", "eptStatistics"},
         {"6", "eptEncyclopedia"},
     };
@@ -224,7 +270,8 @@ void CUIPdaWnd::Show(bool status)
             SetActiveSubdialog(m_sActiveSection);
         else
         {
-            cpcstr subdialog = pUIMapWnd && !pUITaskWnd ? "eptMap" : "eptTasks";
+            const bool hasTaskWnd = pUITaskWnd || pUISHoCTaskWnd;
+            cpcstr subdialog = pUIMapWnd && !hasTaskWnd ? "eptMap" : "eptTasks";
             SetActiveSubdialog(subdialog);
             UITabControl->SetActiveTab(subdialog);
         }
@@ -251,7 +298,13 @@ void CUIPdaWnd::Update()
         m_pActiveDialog->Update();
 
     if (m_clock)
-        m_clock->SetText(GetGameTimeAsString(InventoryUtilities::etpTimeToMinutes).c_str());
+    {
+        u32 year = 0, month = 0, day = 0, hours = 0, mins = 0, secs = 0, milisecs = 0;
+        split_time(Level().GetGameTime(), year, month, day, hours, mins, secs, milisecs);
+        string64 buf;
+        xr_sprintf(buf, "%02u:%02u %02u/%02u/%04u", hours, mins, day, month, year);
+        m_clock->SetText(buf);
+    }
 
     if (pUILogsWnd)
         Device.seqParallel.push_back(fastdelegate::FastDelegate0<>(pUILogsWnd, &CUILogsWnd::PerformWork));
@@ -272,12 +325,14 @@ void CUIPdaWnd::SetActiveSubdialog(const shared_str& section)
 
     const std::tuple<shared_str, CUIWindow*> availableWindowsList[] =
     {
-        { "eptMap",         pUIMapWnd },
-        { "eptTasks",       pUITaskWnd },
-        { "eptFractionWar", pUIFactionWarWnd },
-        { "eptStatistics",  pUIActorInfo },
-        { "eptRanking",     pUIRankingWnd },
-        { "eptLogs",        pUILogsWnd },
+        { "eptMap",          pUIMapWnd },
+        { "eptTasks",        ShadowOfChernobylMode ? static_cast<CUIWindow*>(pUISHoCTaskWnd)     : static_cast<CUIWindow*>(pUITaskWnd) },
+        { "eptFractionWar",  pUIFactionWarWnd },
+        { "eptStatistics",   pUIActorInfo },
+        { "eptRanking",      ShadowOfChernobylMode ? static_cast<CUIWindow*>(pUISHoCRankingWnd)  : static_cast<CUIWindow*>(pUIRankingWnd) },
+        { "eptLogs",         ShadowOfChernobylMode ? static_cast<CUIWindow*>(pUISHoCDiaryWnd)    : static_cast<CUIWindow*>(pUILogsWnd) },
+        { "eptContacts",     ShadowOfChernobylMode ? static_cast<CUIWindow*>(pUISHoCContactsWnd) : static_cast<CUIWindow*>(pUILogsWnd) },
+        { "eptEncyclopedia", pUIEncyclopediaWnd },
     };
 
     for (const auto& [id, wnd] : availableWindowsList)

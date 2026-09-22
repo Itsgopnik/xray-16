@@ -76,7 +76,12 @@ void CUIMainIngameWnd::Init()
     CUIXml uiXml;
     uiXml.Load(CONFIG_PATH, UI_PATH, UI_PATH_DEFAULT, MAININGAME_XML);
 
-    CUIXmlInit::InitWindow(uiXml, "main", 0, this);
+    if (!CUIXmlInit::InitWindow(uiXml, "main", 0, this, false))
+    {
+        // SHoC's maingame.xml doesn't wrap elements in a <main> node
+        SetWndPos({0.f, 0.f});
+        SetWndSize({UI_BASE_WIDTH, UI_BASE_HEIGHT});
+    }
 
     Enable(false);
 
@@ -96,21 +101,23 @@ void CUIMainIngameWnd::Init()
 	UIWeaponIcon.SetShader		(GetEquipmentIconsShader());
 	UIWeaponIcon_rect			= UIWeaponIcon.GetWndRect();
 */ //---------------------------------------------------------
-    UIPickUpItemIcon = UIHelper::CreateStatic(uiXml, "pick_up_item", this);
-    UIPickUpItemIcon->SetShader(GetEquipmentIconsShader());
-
-    m_iPickUpItemIconWidth = UIPickUpItemIcon->GetWidth();
-    m_iPickUpItemIconHeight = UIPickUpItemIcon->GetHeight();
-    m_iPickUpItemIconX = UIPickUpItemIcon->GetWndRect().left;
-    m_iPickUpItemIconY = UIPickUpItemIcon->GetWndRect().top;
+    UIPickUpItemIcon = UIHelper::CreateStatic(uiXml, "pick_up_item", this, false);
+    if (UIPickUpItemIcon)
+    {
+        UIPickUpItemIcon->SetShader(GetEquipmentIconsShader());
+        m_iPickUpItemIconWidth = UIPickUpItemIcon->GetWidth();
+        m_iPickUpItemIconHeight = UIPickUpItemIcon->GetHeight();
+        m_iPickUpItemIconX = UIPickUpItemIcon->GetWndRect().left;
+        m_iPickUpItemIconY = UIPickUpItemIcon->GetWndRect().top;
+    }
     //---------------------------------------------------------
 
     // Подсказки, которые возникают при наведении прицела на объект
-    UIStaticQuickHelp = UIHelper::CreateStatic(uiXml, "quick_info", this);
+    UIStaticQuickHelp = UIHelper::CreateStatic(uiXml, "quick_info", this, false);
 
     uiXml.SetLocalRoot(uiXml.GetRoot());
 
-    m_UIIcons = UIHelper::CreateScrollView(uiXml, "icons_scroll_view", this);
+    m_UIIcons = UIHelper::CreateScrollView(uiXml, "icons_scroll_view", this, false);
 
     m_ind_bleeding = UIHelper::CreateStatic(uiXml, "indicator_bleeding", this, false);
     m_ind_radiation = UIHelper::CreateStatic(uiXml, "indicator_radiation", this, false);
@@ -177,7 +184,7 @@ void CUIMainIngameWnd::Init()
 
     // Загружаем пороговые значения для индикаторов
     EWarningIcons j = ewiWeaponJammed;
-    while (j < ewiInvincible)
+    while (j < ewiInvincible && pSettings->section_exist("main_ingame_indicators_thresholds"))
     {
         // Читаем данные порогов для каждого индикатора
         shared_str cfgRecord =
@@ -198,8 +205,11 @@ void CUIMainIngameWnd::Init()
     }
 
     // Flashing icons initialize
-    uiXml.SetLocalRoot(uiXml.NavigateToNode("flashing_icons"));
-    InitFlashingIcons(&uiXml);
+    if (XML_NODE flashingNode = uiXml.NavigateToNode("flashing_icons"))
+    {
+        uiXml.SetLocalRoot(flashingNode);
+        InitFlashingIcons(&uiXml);
+    }
 
     uiXml.SetLocalRoot(uiXml.GetRoot());
 
@@ -220,7 +230,7 @@ void CUIMainIngameWnd::Init()
         AttachChild(UIMotionIcon);
     }
 
-    UIStaticDiskIO = UIHelper::CreateStatic(uiXml, "disk_io", this);
+    UIStaticDiskIO = UIHelper::CreateStatic(uiXml, "disk_io", this, false);
 
     if (IsGameTypeSingle() && uiXml.NavigateToNode("artefact_panel", 0))
     {
@@ -250,7 +260,7 @@ void CUIMainIngameWnd::Init()
         m_quick_slots_icons.push_back(slot);
 
         xr_sprintf(path, "quick_slot%d_text", i);
-        m_quick_slots_texts.emplace_back(UIHelper::CreateStatic(uiXml, path, this));
+        m_quick_slots_texts.emplace_back(UIHelper::CreateStatic(uiXml, path, this, false));
 
         i++;
     }
@@ -270,13 +280,16 @@ void CUIMainIngameWnd::Draw()
     if (IOActive)
         UIStaticDiskIO_start_time = Device.fTimeGlobal;
 
-    if ((UIStaticDiskIO_start_time + 1.0f) < Device.fTimeGlobal)
-        UIStaticDiskIO->Show(false);
-    else
+    if (UIStaticDiskIO)
     {
-        u32 alpha = clampr(iFloor(255.f * (1.f - (Device.fTimeGlobal - UIStaticDiskIO_start_time) / 1.f)), 0, 255);
-        UIStaticDiskIO->Show(true);
-        UIStaticDiskIO->SetTextureColor(color_rgba(255, 255, 255, alpha));
+        if ((UIStaticDiskIO_start_time + 1.0f) < Device.fTimeGlobal)
+            UIStaticDiskIO->Show(false);
+        else
+        {
+            u32 alpha = clampr(iFloor(255.f * (1.f - (Device.fTimeGlobal - UIStaticDiskIO_start_time) / 1.f)), 0, 255);
+            UIStaticDiskIO->Show(true);
+            UIStaticDiskIO->SetTextureColor(color_rgba(255, 255, 255, alpha));
+        }
     }
     FS.dwOpenCounter = 0;
 
@@ -399,6 +412,9 @@ void CUIMainIngameWnd::Update()
 
 void CUIMainIngameWnd::RenderQuickInfos()
 {
+    if (!UIStaticQuickHelp)
+        return;
+
     CActor* pActor = smart_cast<CActor*>(Level().CurrentViewEntity());
     if (!pActor)
         return;
@@ -431,6 +447,9 @@ void CUIMainIngameWnd::ReceiveNews(const GAME_NEWS_DATA* news)
 
 void CUIMainIngameWnd::SetWarningIconColorUI(CUIStatic* s, const u32 cl)
 {
+    if (!m_UIIcons)
+        return;
+
     int bOn = (cl >> 24);
     bool bIsShown = s->IsShown();
 
@@ -566,6 +585,9 @@ void CUIMainIngameWnd::AnimateContacts(bool b_snd)
 void CUIMainIngameWnd::SetPickUpItem(CInventoryItem* PickUpItem) { m_pPickUpItem = PickUpItem; };
 void CUIMainIngameWnd::UpdatePickUpItem()
 {
+    if (!UIPickUpItemIcon)
+        return;
+
     if (!m_pPickUpItem || !Level().CurrentViewEntity() || !smart_cast<CActor*>(Level().CurrentViewEntity()))
     {
         UIPickUpItemIcon->Show(false);

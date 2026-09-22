@@ -373,6 +373,7 @@ IReader* open_chunk(int fd, u32 ID, pcstr archiveName, size_t archiveSize, bool 
                 if (!result && shouldDecrypt)
                 {
                     // Let's try to decode with RU key
+                    // g_trivial_encryptor.encode(src_data, dwSize, src_data); // rollback WW decode
                     g_trivial_encryptor.decode(src_data, dwSize, src_data, trivial_encryptor::key_flag::russian);
                     result = _decompressLZ(&dest, &dest_sz, src_data, dwSize, archiveSize);
                 }
@@ -466,6 +467,9 @@ void CLocatorAPI::LoadArchive(archive& A, pcstr entrypoint)
         string_path full;
         strconcat(full, fs_entry_point, header.name);
         Register(full, A.vfs_idx, header.crc, header.ptr, header.size_real, header.size_compr, A.modif);
+        // Temporary: log UI/scroll texture file names for SHoC compat debugging
+        if (strstr(header.name, "scroll") || strstr(header.name, "\\ui\\") || strstr(header.name, "/ui/"))
+            Msg("~ FS_ARCHIVE [%s]: %s", A.path.c_str(), header.name);
     }
     hdr->close();
 } //-V773

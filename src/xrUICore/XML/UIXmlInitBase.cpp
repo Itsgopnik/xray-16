@@ -609,7 +609,13 @@ void CUIXmlInitBase::InitAutoStaticGroup(CUIXml& xml_doc, pcstr path, int index,
 
             // some code relies on window name
             // but it can get overriden during initialization, so set name again.
-            InitFrameLine(xml_doc, "auto_frameline", cnt_frameline, pUIFrameline);
+            if (!InitFrameLine(xml_doc, "auto_frameline", cnt_frameline, pUIFrameline, false))
+            {
+                xr_delete(pUIFrameline);
+                ++cnt_frameline;
+                node = node->NextSibling();
+                continue;
+            }
             pUIFrameline->SetWindowName(buff);
 
             pUIFrameline->SetAutoDelete(true);
@@ -816,11 +822,38 @@ bool CUIXmlInitBase::InitFrameLine(CUIXml& xml_doc, pcstr path, int index, CUIFr
 
 bool CUIXmlInitBase::InitTextFrameLine(CUIXml& xml_doc, pcstr path, int index, CUITextFrameLineWnd* pWnd, bool fatal /*= true*/)
 {
+    if (!xml_doc.NavigateToNode(path, index))
+    {
+        R_ASSERT4(!fatal, "XML node not found", path, xml_doc.m_xml_file_name);
+        return false;
+    }
+
+    // Apply the root node's x/y/width/height to the parent CUITextFrameLineWnd
+    // so its children (m_title, m_frameline, plus any externally-attached
+    // widgets like animated icons) are positioned relative to the frame line —
+    // matching the layout assumed by original SHoC/CoP XMLs.
+    Fvector2 pos, size;
+    pos.x = xml_doc.ReadAttribFlt(path, index, "x");
+    pos.y = xml_doc.ReadAttribFlt(path, index, "y");
+    InitAlignment(xml_doc, path, index, pos.x, pos.y, pWnd);
+    size.x = xml_doc.ReadAttribFlt(path, index, "width");
+    size.y = xml_doc.ReadAttribFlt(path, index, "height");
+    pWnd->SetWndPos(pos);
+    pWnd->SetWndSize(size);
+
     string256 buf;
     strconcat(buf, path, ":title");
     InitStatic(xml_doc, buf, index, &pWnd->m_title, false);
 
-    return InitFrameLine(xml_doc, path, index, &pWnd->m_frameline, fatal);
+    const bool ok = InitFrameLine(xml_doc, path, index, &pWnd->m_frameline, fatal);
+
+    // InitFrameLine also reads the root x/y/width/height into m_frameline.
+    // Since we've absorbed those into the parent, snap the frameline to (0,0)
+    // inside the parent so it isn't double-offset.
+    pWnd->m_frameline.SetWndPos({ 0.0f, 0.0f });
+    pWnd->m_frameline.SetWndSize(size);
+
+    return ok;
 }
 
 bool CUIXmlInitBase::InitCustomEdit(CUIXml& xml_doc, pcstr path, int index, CUICustomEdit* pWnd, bool fatal /*= true*/)

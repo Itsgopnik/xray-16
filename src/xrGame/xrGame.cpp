@@ -39,6 +39,8 @@ XR_EXPORT IFactoryObject* __cdecl xrFactory_Create(CLASS_ID clsid)
 }
 
 XR_EXPORT void __cdecl xrFactory_Destroy(IFactoryObject* O) { xr_delete(O); }
+
+XR_EXPORT GameModule* __cdecl xrGameModuleInstance() { return &xrGame; }
 }
 
 void xrGameModule::initialize(Factory_Create*& pCreate, Factory_Destroy*& pDestroy)

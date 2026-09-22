@@ -6,8 +6,8 @@ CUITextFrameLineWnd::CUITextFrameLineWnd()
     : CUIWindow(CUITextFrameLineWnd::GetDebugType()),
       bHorizontal(true), m_frameline("Frameline"), m_title("Title")
 {
-    AttachChild(&m_title);
     AttachChild(&m_frameline);
+    AttachChild(&m_title);
 }
 
 void CUITextFrameLineWnd::Init(pcstr baseTexture, Fvector2 pos, Fvector2 size, bool horizontal)

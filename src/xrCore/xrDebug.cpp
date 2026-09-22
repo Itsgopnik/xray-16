@@ -555,6 +555,7 @@ void xrDebug::DoExit(const std::string& message)
     if (windowHandler)
         windowHandler->OnErrorDialog(true);
 
+    Log(message.c_str());
     FlushLog();
 
     if (ShowErrorMessage)
