@@ -662,7 +662,13 @@ void CUIXmlInitBase::InitAutoStaticGroup(CUIXml& xml_doc, pcstr path, int index,
 
             // some code relies on window name
             // but it can get overriden during initialization, so set name again.
-            InitFrameLine(xml_doc, "auto_frameline", cnt_frameline, pUIFrameline);
+            if (!InitFrameLine(xml_doc, "auto_frameline", cnt_frameline, pUIFrameline, false))
+            {
+                xr_delete(pUIFrameline);
+                ++cnt_frameline;
+                node = node->NextSibling();
+                continue;
+            }
             pUIFrameline->SetWindowName(buff);
 
             pUIFrameline->SetAutoDelete(true);

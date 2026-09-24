@@ -17,8 +17,14 @@ class CUIFactionWarWnd;
 class CUIActorInfoWnd;
 class CUIRankingWnd;
 class CUILogsWnd;
+class CUIEncyclopediaWnd;
 class CUIAnimatedStatic;
 class UIHint;
+
+class CUISHoCTaskWnd;
+class CUISHoCDiaryWnd;
+class CUISHoCContactsWnd;
+class CUISHoCRankingWnd;
 
 class CUIPdaWnd final : public CUIDialogWnd
 {
@@ -49,6 +55,13 @@ public:
     CUIActorInfoWnd* pUIActorInfo;
     CUIRankingWnd* pUIRankingWnd;
     CUILogsWnd* pUILogsWnd;
+    CUIEncyclopediaWnd* pUIEncyclopediaWnd;
+
+    // SHoC-specific windows (used when ShadowOfChernobylMode is active)
+    CUISHoCTaskWnd* pUISHoCTaskWnd;
+    CUISHoCDiaryWnd* pUISHoCDiaryWnd;
+    CUISHoCContactsWnd* pUISHoCContactsWnd;
+    CUISHoCRankingWnd* pUISHoCRankingWnd;
 
     virtual void Reset();
 

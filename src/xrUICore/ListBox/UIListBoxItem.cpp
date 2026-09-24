@@ -19,13 +19,6 @@ CUIListBoxItem::~CUIListBoxItem()
 
 void CUIListBoxItem::SetTAG(u32 value) { tag = value; }
 u32 CUIListBoxItem::GetTAG() { return tag; }
-void CUIListBoxItem::Draw()
-{
-    if (m_bSelected)
-        DrawElements();
-
-    CUIWindow::Draw();
-}
 
 bool CUIListBoxItem::OnKeyboardAction(int dik, EUIMessages keyboard_action)
 {

@@ -28,7 +28,12 @@
 #include "UIActorInfo.h"
 #include "UIRankingWnd.h"
 #include "UILogsWnd.h"
+#include "UIEncyclopediaWnd.h"
 #include "UIScriptWnd.h"
+#include "UISHoCTaskWnd.h"
+#include "UISHoCDiaryWnd.h"
+#include "UISHoCContactsWnd.h"
+#include "UISHoCRankingWnd.h"
 
 #define PDA_XML "pda.xml"
 
@@ -45,6 +50,11 @@ CUIPdaWnd::CUIPdaWnd() : CUIDialogWnd(CUIPdaWnd::GetDebugType())
     pUIActorInfo = nullptr;
     pUIRankingWnd = nullptr;
     pUILogsWnd = nullptr;
+    pUIEncyclopediaWnd = nullptr;
+    pUISHoCTaskWnd = nullptr;
+    pUISHoCDiaryWnd = nullptr;
+    pUISHoCContactsWnd = nullptr;
+    pUISHoCRankingWnd = nullptr;
     m_hint_wnd = nullptr;
     Init();
 }
@@ -63,6 +73,16 @@ CUIPdaWnd::~CUIPdaWnd()
         delete_data(pUIRankingWnd);
     if (pUILogsWnd)
         delete_data(pUILogsWnd);
+    if (pUIEncyclopediaWnd)
+        delete_data(pUIEncyclopediaWnd);
+    if (pUISHoCTaskWnd)
+        delete_data(pUISHoCTaskWnd);
+    if (pUISHoCDiaryWnd)
+        delete_data(pUISHoCDiaryWnd);
+    if (pUISHoCContactsWnd)
+        delete_data(pUISHoCContactsWnd);
+    if (pUISHoCRankingWnd)
+        delete_data(pUISHoCRankingWnd);
     delete_data(m_hint_wnd);
     if (UINoice)
         delete_data(UINoice);
@@ -122,25 +142,50 @@ void CUIPdaWnd::Init()
         if (!pUIMapWnd->Init("pda_map.xml", "map_wnd", false))
             xr_delete(pUIMapWnd);
 
-        pUITaskWnd = xr_new<CUITaskWnd>(m_hint_wnd);
-        if (!pUITaskWnd->Init())
-            xr_delete(pUITaskWnd);
+        if (ShadowOfChernobylMode)
+        {
+            pUISHoCTaskWnd = xr_new<CUISHoCTaskWnd>(m_hint_wnd);
+            if (!pUISHoCTaskWnd->Init())
+                xr_delete(pUISHoCTaskWnd);
 
-        pUIFactionWarWnd = xr_new<CUIFactionWarWnd>(m_hint_wnd);
-        if (!pUIFactionWarWnd->Init())
-            xr_delete(pUIFactionWarWnd);
+            pUISHoCDiaryWnd = xr_new<CUISHoCDiaryWnd>();
+            if (!pUISHoCDiaryWnd->Init())
+                xr_delete(pUISHoCDiaryWnd);
+
+            pUISHoCContactsWnd = xr_new<CUISHoCContactsWnd>();
+            if (!pUISHoCContactsWnd->Init())
+                xr_delete(pUISHoCContactsWnd);
+
+            pUISHoCRankingWnd = xr_new<CUISHoCRankingWnd>();
+            if (!pUISHoCRankingWnd->Init())
+                xr_delete(pUISHoCRankingWnd);
+        }
+        else
+        {
+            pUITaskWnd = xr_new<CUITaskWnd>(m_hint_wnd);
+            if (!pUITaskWnd->Init())
+                xr_delete(pUITaskWnd);
+
+            pUIFactionWarWnd = xr_new<CUIFactionWarWnd>(m_hint_wnd);
+            if (!pUIFactionWarWnd->Init())
+                xr_delete(pUIFactionWarWnd);
+
+            pUIRankingWnd = xr_new<CUIRankingWnd>();
+            if (!pUIRankingWnd->Init())
+                xr_delete(pUIRankingWnd);
+
+            pUILogsWnd = xr_new<CUILogsWnd>();
+            if (!pUILogsWnd->Init())
+                xr_delete(pUILogsWnd);
+        }
 
         pUIActorInfo = xr_new<CUIActorInfoWnd>();
         if (!pUIActorInfo->Init())
             xr_delete(pUIActorInfo);
 
-        pUIRankingWnd = xr_new<CUIRankingWnd>();
-        if (!pUIRankingWnd->Init())
-            xr_delete(pUIRankingWnd);
-
-        pUILogsWnd = xr_new<CUILogsWnd>();
-        if (!pUILogsWnd->Init())
-            xr_delete(pUILogsWnd);
+        pUIEncyclopediaWnd = xr_new<CUIEncyclopediaWnd>();
+        if (!pUIEncyclopediaWnd->Init())
+            xr_delete(pUIEncyclopediaWnd);
     }
 
     UITabControl = xr_new<CUITabControl>();
@@ -227,7 +272,8 @@ void CUIPdaWnd::Show(bool status)
             SetActiveSubdialog(m_sActiveSection);
         else
         {
-            cpcstr subdialog = pUIMapWnd && !pUITaskWnd ? "eptMap" : "eptTasks";
+            const bool hasTaskWnd = pUITaskWnd || pUISHoCTaskWnd;
+            cpcstr subdialog = pUIMapWnd && !hasTaskWnd ? "eptMap" : "eptTasks";
             SetActiveSubdialog(subdialog);
             UITabControl->SetActiveTab(subdialog);
         }
@@ -282,12 +328,17 @@ void CUIPdaWnd::SetActiveSubdialog(const shared_str& section)
 
     const std::tuple<shared_str, pcstr, CUIWindow*> availableWindowsList[] =
     {
-        { "eptMap",         nullptr, pUIMapWnd },
-        { "eptTasks",       nullptr, pUITaskWnd },
-        { "eptFractionWar", nullptr, pUIFactionWarWnd },
-        { "eptStatistics",  "ui_pda_actor_info", pUIActorInfo },
-        { "eptRanking",     nullptr, pUIRankingWnd },
-        { "eptLogs",        nullptr, pUILogsWnd },
+        { "eptMap",             nullptr, pUIMapWnd },
+        { "eptTasks",           nullptr, ShadowOfChernobylMode ? static_cast<CUIWindow*>(pUISHoCTaskWnd) : pUITaskWnd },
+        { "eptFractionWar",     nullptr, pUIFactionWarWnd },
+        { "eptStatistics",      "ui_pda_actor_info", pUIActorInfo },
+        { "eptRanking",         nullptr, pUIRankingWnd },
+        { "eptLogs",            nullptr, pUILogsWnd },
+        // SOC tabs
+        { "eptDiary",           nullptr, pUISHoCDiaryWnd },
+        { "eptContacts",        nullptr, pUISHoCContactsWnd },
+        { "eptStalkersRanking", nullptr, pUISHoCRankingWnd },
+        { "eptEncyclopedia",    nullptr, pUIEncyclopediaWnd },
     };
 
     pcstr soc_infoportion{};

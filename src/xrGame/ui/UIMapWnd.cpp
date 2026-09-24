@@ -110,8 +110,11 @@ bool CUIMapWnd::Init(cpcstr xml_name, cpcstr start_from, bool critical /*= true*
         sx = uiXml.ReadAttribFlt(pth, 0, "sx", 5.0f);
         sy = uiXml.ReadAttribFlt(pth, 0, "sy", 5.0f);
 
-        CUIWindow* rect_parent = m_UIMainFrame; // m_UILevelFrame;
-        Frect r = rect_parent->GetWndRect();
+        Frect r;
+        if (m_UIMainFrame)
+            r = m_UIMainFrame->GetWndRect();
+        else
+            r.set(0.f, 0.f, GetWndSize().x, GetWndSize().y);
 
         auto tempScroll = xr_new<CUIFixedScrollBar>();
         if (tempScroll->InitScrollBar(Fvector2().set(r.left + dx, r.bottom - sy), true))

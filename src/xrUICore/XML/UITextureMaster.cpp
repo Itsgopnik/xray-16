@@ -224,6 +224,29 @@ bool CUITextureMaster::FindItem(const shared_str& texture_name, pcstr default_te
     return false;
 }
 
+void CUITextureMaster::RegisterTexture(const shared_str& id, const shared_str& file, const Frect& rect)
+{
+    TEX_INFO info;
+    info.file = file;
+    info.rect = rect;
+    m_textures[id] = info;
+}
+
+void CUITextureMaster::LogAllTextures(pcstr file_filter)
+{
+    Msg("TEX_DUMP_BEGIN filter=[%s] total=%u", file_filter ? file_filter : "*", (u32)m_textures.size());
+    for (const auto& kv : m_textures)
+    {
+        if (file_filter && xr_strcmp(kv.second.file.c_str(), file_filter) != 0)
+            continue;
+        Msg("TEX_DUMP id=%s file=%s x=%.1f y=%.1f w=%.1f h=%.1f",
+            kv.first.c_str(), kv.second.file.c_str(),
+            kv.second.rect.x1, kv.second.rect.y1,
+            kv.second.rect.width(), kv.second.rect.height());
+    }
+    Msg("TEX_DUMP_END");
+}
+
 bool CUITextureMaster::ItemExist(const shared_str& texture_name)
 {
     const auto it = m_textures.find(texture_name);
