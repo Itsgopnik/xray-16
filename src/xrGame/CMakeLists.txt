@@ -2178,6 +2178,8 @@ target_sources(xrGame PRIVATE
     ui/UIDialogWnd.cpp
     ui/UIDialogWnd.h
     ui/UIDiaryWnd.h
+    ui/UIEncyclopediaWnd.cpp
+    ui/UIEncyclopediaWnd.h
     ui/UIDragDropListEx.cpp
     ui/UIDragDropListEx.h
     ui/UIDragDropReferenceList.cpp
@@ -2299,6 +2301,14 @@ target_sources(xrGame PRIVATE
     ui/UIRankingWnd.cpp
     ui/UIRankingWnd.h
     ui/UIScriptWnd.cpp
+    ui/UISHoCTaskWnd.cpp
+    ui/UISHoCTaskWnd.h
+    ui/UISHoCDiaryWnd.cpp
+    ui/UISHoCDiaryWnd.h
+    ui/UISHoCContactsWnd.cpp
+    ui/UISHoCContactsWnd.h
+    ui/UISHoCRankingWnd.cpp
+    ui/UISHoCRankingWnd.h
     ui/UIScriptWnd.h
     ui/UIScriptWnd_script.cpp
     ui/UISecondTaskWnd.cpp

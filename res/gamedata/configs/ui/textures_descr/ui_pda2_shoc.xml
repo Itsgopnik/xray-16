@@ -1,0 +1,37 @@
+<w>
+    <file name="ui\ui_pda2">
+        <texture id="ui_pda2_fr_b"    x="0" y="816" width="955" height="9" />
+        <texture id="ui_pda2_fr_back" x="0" y="816" width="955" height="9" />
+        <texture id="ui_pda2_fr_e"    x="0" y="825" width="955" height="21" />
+        <texture id="ui_pda2_fr2_b"    x="0" y="816" width="955" height="9" />
+        <texture id="ui_pda2_fr2_back" x="0" y="816" width="955" height="9" />
+        <texture id="ui_pda2_fr2_e"    x="0" y="825" width="955" height="21" />
+        <texture id="ui_pda2_fr_delimiter_fraction" x="0" y="850" width="955" height="103" />
+        <texture id="ui_pda2_fr_delimiter_ranking"  x="0" y="953" width="955" height="67" />
+        <texture id="ui_pda2_delimiter_01"  x="959" y="851" width="10" height="5" />
+        <texture id="ui_pda2_delimiter_02"  x="961" y="891" width="42" height="50" />
+        <texture id="ui_pda2_place_up"   x="959" y="862" width="9" height="5" />
+        <texture id="ui_pda2_place_down" x="959" y="869" width="9" height="5" />
+        <texture id="ui_pda2_line_h_back" x="995" y="770" width="9" height="3" />
+        <texture id="ui_pda2_line_h_b"    x="995" y="770" width="9" height="3" />
+        <texture id="ui_pda2_line_h_e"    x="995" y="770" width="9" height="3" />
+        <texture id="ui_pda2_line_v_back" x="993" y="777" width="3" height="11" />
+        <texture id="ui_pda2_line_v_b"    x="993" y="777" width="3" height="11" />
+        <texture id="ui_pda2_line_v_e"    x="993" y="777" width="3" height="11" />
+        <texture id="ui_pda2_line_vl_back" x="1010" y="777" width="4" height="11" />
+        <texture id="ui_pda2_line_vl_b"    x="1010" y="777" width="4" height="11" />
+        <texture id="ui_pda2_line_vl_e"    x="1010" y="777" width="4" height="11" />
+        <texture id="ui_pda2_line_vr_back" x="1001" y="777" width="4" height="11" />
+        <texture id="ui_pda2_line_vr_b"    x="1001" y="777" width="4" height="11" />
+        <texture id="ui_pda2_line_vr_e"    x="1001" y="777" width="4" height="11" />
+        <texture id="ui_pda2_line_d_back" x="1010" y="770" width="9" height="4" />
+        <texture id="ui_pda2_line_d_b"    x="1010" y="770" width="9" height="4" />
+        <texture id="ui_pda2_line_d_e"    x="1010" y="770" width="9" height="4" />
+    </file>
+    <file name="ui\ui_hud">
+        <texture id="ui_pda2_small_progress" x="592" y="746" width="432" height="38" />
+    </file>
+    <file name="ui\ui_inventory2">
+        <texture id="ui_pda2_small_progress2" x="2" y="852" width="432" height="38" />
+    </file>
+</w>

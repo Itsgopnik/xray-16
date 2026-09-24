@@ -46,7 +46,7 @@ struct tracy_raii
 int entry_point(pcstr commandLine)
 {
     tracy_raii raii;
-    auto* game = strstr(commandLine, "-nogame") ? nullptr : &xrGame;
+    auto* game = strstr(commandLine, "-nogame") ? nullptr : xrGameModuleInstance();
 
     CApplication app{ commandLine, game, s_render_modules };
 

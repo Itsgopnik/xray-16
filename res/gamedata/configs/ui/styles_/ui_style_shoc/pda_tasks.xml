@@ -1,0 +1,192 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!--
+    SHoC-style PDA Tasks panel for OpenXRay.
+    Adapted from SHoC pda_events.xml layout (left task list + right map).
+    All required CoP-API nodes present so CUITaskWnd::Init() succeeds:
+    main_wnd, map_wnd, storyline_task_item, btn_task_focus, btn_second_task,
+    second_task_wnd (task_list/task_item), map_legend_wnd (legend_list).
+    Optional nodes (false-fallback): background, task_split, line_devider,
+    secondary_task_item, btn_task_focus2, second_task_index, center_background.
+    Screen area inside SHoC outer frame: ~x=10..885, y=25..565 (tabs start at 574).
+-->
+<w>
+    <main_wnd x="0" y="0" width="1024" height="768">
+        <window_name>pda_tasks</window_name>
+    </main_wnd>
+
+    <!-- center_background is required (no false fallback in UITaskWnd.cpp:57).
+         Moved offscreen — was a thin vertical divider but mis-aligned with the
+         single-pane layout below. -->
+    <center_background x="2000" y="2000" width="2" height="2">
+        <texture>ui_pda2_delimiter_03</texture>
+    </center_background>
+
+    <!-- Active storyline task strip — wide horizontal banner inside parchment visible area.
+         SHoC PDA chrome leaves usable inner space roughly y=70..565 (above tabs at y=574).
+         Width spans nearly full parchment (x=20..880). -->
+    <storyline_task_item x="50" y="85" width="800" height="40">
+        <window_name>pda_task_item1</window_name>
+        <t_icon x="0" y="2" width="36" height="32"/>
+        <t_caption x="44" y="6" width="740" height="22">
+            <text align="l" font="letterica18" r="231" g="168" b="12"/>
+        </t_caption>
+    </storyline_task_item>
+
+    <!-- Required button — invisible, kept as 0×0 (SHoC has no focus button) -->
+    <btn_task_focus x="0" y="0" width="0" height="0">
+        <window_name>btn_task_focus</window_name>
+        <texture>ui_task_bt_center</texture>
+    </btn_task_focus>
+
+    <!-- Required button — invisible (SHoC has no separate second-task popup) -->
+    <btn_second_task x="0" y="0" width="0" height="0">
+        <window_name>btn_second_task</window_name>
+        <texture>ui_task_bt_tslist</texture>
+    </btn_second_task>
+
+    <!-- Map: fills the main panel area below the storyline strip -->
+    <map_wnd scroll_enable="1" map_move_step="11">
+        <main_wnd x="50" y="135" width="810" height="430"/>
+
+        <main_map_frame x="0" y="0" width="810" height="430" dx="5" dy="5" sx="22" sy="22">
+            <texture>ui_pda2_mapframe</texture>
+        </main_map_frame>
+
+        <level_frame x="6" y="5" width="798" height="398"/>
+
+        <map_hint_item x="0" y="0" width="300" height="200">
+            <texture>ui_icons_PDA_tooltips</texture>
+            <simple_text x="8" y="12" width="185" height="192" complex_mode="1">
+                <text align="l" font="letterica18"/>
+            </simple_text>
+            <t_icon x="11" y="11" width="42" height="37"/>
+            <t_caption x="62" y="12" width="210" height="18" complex_mode="1">
+                <text align="l" font="letterica18"/>
+            </t_caption>
+            <t_time x="62" y="38" width="210" height="18">
+                <text align="l" font="letterica16" color="ui_9"/>
+            </t_time>
+            <t_time_rem x="62" y="58" width="210" height="18">
+                <text align="l" font="letterica16" color="ui_9"/>
+            </t_time_rem>
+            <t_hint_text x="8" y="75" width="275" height="18" complex_mode="1">
+                <text align="l" font="letterica18"/>
+            </t_hint_text>
+        </map_hint_item>
+    </map_wnd>
+
+    <!-- All 9 nav buttons required by engine — collapse to 0×0 (SHoC uses drag) -->
+    <btn_nav_parent x="0" y="0" width="0" height="0">
+        <btn_nav_0 x="0" y="0" width="0" height="0"><texture>ui_mnav_bt_legend</texture></btn_nav_0>
+        <btn_nav_1 x="0" y="0" width="0" height="0"><texture>ui_mnav_bt_up</texture></btn_nav_1>
+        <btn_nav_2 x="0" y="0" width="0" height="0"><texture>ui_mnav_bt_zoom_in</texture></btn_nav_2>
+        <btn_nav_3 x="0" y="0" width="0" height="0"><texture>ui_mnav_bt_left</texture></btn_nav_3>
+        <btn_nav_4 x="0" y="0" width="0" height="0"><texture>ui_mnav_bt_center</texture></btn_nav_4>
+        <btn_nav_5 x="0" y="0" width="0" height="0"><texture>ui_mnav_bt_right</texture></btn_nav_5>
+        <btn_nav_6 x="0" y="0" width="0" height="0"><texture>ui_mnav_bt_zoom_out</texture></btn_nav_6>
+        <btn_nav_7 x="0" y="0" width="0" height="0"><texture>ui_mnav_bt_down</texture></btn_nav_7>
+        <btn_nav_8 x="0" y="0" width="0" height="0"><texture>ui_mnav_bt_zmreset</texture></btn_nav_8>
+    </btn_nav_parent>
+
+    <!-- Task list popup (hidden by default; user toggles via btn_second_task which is 0×0).
+         Moved offscreen so background_frame doesn't draw visible artifacts if Show(false)
+         doesn't suppress child rendering. Required by UITaskListWnd::init_from_xml. -->
+    <second_task_wnd x="2000" y="2000" width="335" height="485">
+
+        <background_frame x="0" y="0" width="335" height="485">
+            <texture>ui_pda2_mapframe</texture>
+            <auto_frameline x="10" y="32" width="315" height="3">
+                <texture>ui_pda2_split</texture>
+            </auto_frameline>
+        </background_frame>
+
+        <t_caption x="15" y="10" width="200" height="18">
+            <text align="l" font="letterica18" r="231" g="168" b="12">ui_pda_secondary_task</text>
+        </t_caption>
+
+        <btn_close x="0" y="0" width="0" height="0">
+            <window_name>task_btn_close</window_name>
+            <texture>ui_task_bt_close</texture>
+        </btn_close>
+
+        <task_list x="10" y="42" width="320" height="435" item_height="38" scroll_profile="pda" always_show_scroll="1"/>
+
+        <task_item x="0" y="0" width="300" height="35">
+            <activ  color="ui_1"/>
+            <unread color="ui_4"/>
+            <read   color="ui_3"/>
+
+            <name x="0" y="0" width="270" height="30">
+                <text align="l" font="letterica18" r="225" g="225" b="250" complex_mode="1"/>
+            </name>
+
+            <btn_focus x="0" y="0" width="0" height="0">
+                <window_name>task_item_btn_focus</window_name>
+                <texture>ui_task_bt_center</texture>
+            </btn_focus>
+        </task_item>
+
+    </second_task_wnd>
+
+    <!-- Map legend popup. Required by UIMapLegend::init_from_xml. -->
+    <map_legend_wnd x="500" y="80" width="300" height="400">
+
+        <background_frame x="0" y="0" width="300" height="400">
+            <texture>ui_pda2_mapframe</texture>
+            <auto_frameline x="10" y="32" width="280" height="3">
+                <texture>ui_pda2_split</texture>
+            </auto_frameline>
+        </background_frame>
+
+        <t_caption x="15" y="10" width="200" height="18">
+            <text align="l" font="letterica18" r="231" g="168" b="12">pda_legend_caption</text>
+        </t_caption>
+
+        <btn_close x="275" y="10" width="15" height="15">
+            <window_name>task_btn_close</window_name>
+            <texture>ui_task_bt_close</texture>
+        </btn_close>
+
+        <legend_list x="15" y="45" width="275" height="345" item_height="25" scroll_profile="pda" always_show_scroll="0">
+
+            <item x="0" y="0" width="275" height="26">
+                <image x="10" y="0" width="19" height="19">
+                    <texture>ui_cur_task</texture>
+                </image>
+                <text_static x="40" y="2" width="230" height="16" complex_mode="1">
+                    <text align="l" font="letterica16" color="ui_3">st_ui_pda_legend_main_task</text>
+                </text_static>
+            </item>
+
+            <item x="0" y="0" width="275" height="26">
+                <image x="13" y="2" width="13" height="13">
+                    <texture r="30" g="215" b="30">ui_minimap_point</texture>
+                </image>
+                <text_static x="40" y="2" width="230" height="16" complex_mode="1">
+                    <text align="l" font="letterica16" color="ui_3">st_ui_pda_legend_friends</text>
+                </text_static>
+            </item>
+
+            <item x="0" y="0" width="275" height="26">
+                <image x="13" y="2" width="13" height="13">
+                    <texture r="215" g="215" b="10">ui_minimap_point</texture>
+                </image>
+                <text_static x="40" y="2" width="230" height="16" complex_mode="1">
+                    <text align="l" font="letterica16" color="ui_3">st_ui_pda_legend_neutrals</text>
+                </text_static>
+            </item>
+
+            <item x="0" y="0" width="275" height="26">
+                <image x="13" y="2" width="13" height="13">
+                    <texture r="215" g="30" b="30">ui_minimap_point</texture>
+                </image>
+                <text_static x="40" y="2" width="230" height="16" complex_mode="1">
+                    <text align="l" font="letterica16" color="ui_3">st_ui_pda_legend_enemies</text>
+                </text_static>
+            </item>
+
+        </legend_list>
+
+    </map_legend_wnd>
+
+</w>

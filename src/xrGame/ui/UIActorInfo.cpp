@@ -254,8 +254,19 @@ void CUIActorInfoWnd::Reset()
 
 void CUIActorInfoWnd::FillReputationDetails(CUIXml* xml, LPCSTR path)
 {
-    const XML_NODE _list_node = xml->NavigateToNode("relation_communities_list", 0);
-    const int cnt = xml->GetNodesNum("relation_communities_list", 0, "r");
+    // SHoC XML uses "_relation_communities_list"; keep a fallback for custom overlays.
+    pcstr communitiesNode = "_relation_communities_list";
+    XML_NODE listNode = xml->NavigateToNode(communitiesNode, 0);
+    if (!listNode)
+    {
+        communitiesNode = "relation_communities_list";
+        listNode = xml->NavigateToNode(communitiesNode, 0);
+    }
+
+    if (!listNode)
+        return;
+
+    const int cnt = xml->GetNodesNum(communitiesNode, 0, "r");
 
     CHARACTER_COMMUNITY comm;
     CHARACTER_REPUTATION rep_actor, rep_neutral;
@@ -270,7 +281,7 @@ void CUIActorInfoWnd::FillReputationDetails(CUIXml* xml, LPCSTR path)
     {
         CUIActorStaticticDetail* itm = xr_new<CUIActorStaticticDetail>();
         itm->Init(xml, path, 0);
-        comm.set(xml->Read(_list_node, "r", i, "unknown_community"));
+        comm.set(xml->Read(listNode, "r", i, "unknown_community"));
         itm->m_text1->SetTextST(comm.id().c_str());
 
         CHARACTER_GOODWILL gw = RELATION_REGISTRY().GetCommunityGoodwill(comm.index(), Actor()->ID());

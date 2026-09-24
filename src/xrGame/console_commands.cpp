@@ -878,6 +878,45 @@ public:
     }
 };
 
+class CCC_DumpConfigFile : public IConsole_Command
+{
+public:
+    CCC_DumpConfigFile(LPCSTR N) : IConsole_Command(N) { bEmptyArgsHandled = true; };
+    virtual void Execute(LPCSTR args)
+    {
+        if (!args || !*args)
+        {
+            Msg("usage: dump_config_file <vfs_path_relative_to_config> <output_path>");
+            Msg("example: dump_config_file ui\\pda.xml /tmp/shoc_pda.xml");
+            return;
+        }
+        string_path vfs_path, out_path;
+        if (sscanf(args, "%259s %259s", vfs_path, out_path) != 2)
+        {
+            Msg("! dump_config_file: expected 2 args (vfs_path output_path)");
+            return;
+        }
+        IReader* R = FS.r_open("$game_config$", vfs_path);
+        if (!R)
+        {
+            Msg("! dump_config_file: cannot open '%s' in $game_config$", vfs_path);
+            return;
+        }
+        const size_t size = R->length();
+        IWriter* W = FS.w_open(out_path);
+        if (!W)
+        {
+            Msg("! dump_config_file: cannot create '%s'", out_path);
+            FS.r_close(R);
+            return;
+        }
+        W->w(R->pointer(), size);
+        FS.w_close(W);
+        FS.r_close(R);
+        Msg("* dumped '%s' -> '%s' (%zu bytes)", vfs_path, out_path, size);
+    }
+};
+
 class CCC_FloatBlock : public CCC_Float
 {
 public:
@@ -2177,6 +2216,7 @@ void CCC_RegisterCommands()
 
     CMD1(CCC_FlushLog, "flush"); // flush log
     CMD1(CCC_ClearLog, "clear_log");
+    CMD1(CCC_DumpConfigFile, "dump_config_file"); // dump a file from $game_config$ (incl. archives) to disk
 
 #ifndef MASTER_GOLD
     CMD1(CCC_ALifeTimeFactor, "al_time_factor"); // set time factor

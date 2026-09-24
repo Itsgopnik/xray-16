@@ -78,13 +78,23 @@ void CUIHudStatesWnd::InitFromXml(CUIXml& xml, LPCSTR path)
 {
     ZoneScoped;
 
-    CUIXmlInit::InitWindow(xml, path, 0, this);
     XML_NODE stored_root = xml.GetLocalRoot();
 
-    XML_NODE new_root = xml.NavigateToNode(path, 0);
-    xml.SetLocalRoot(new_root);
+    if (!CUIXmlInit::InitWindow(xml, path, 0, this, false))
+    {
+        if (!ShadowOfChernobylMode)
+            return;
+        // SHoC maingame XML has no hud_states wrapper — elements are at root level
+        SetWndPos({0.f, 0.f});
+        SetWndSize({UI_BASE_WIDTH, UI_BASE_HEIGHT});
+    }
+    else
+    {
+        XML_NODE new_root = xml.NavigateToNode(path, 0);
+        xml.SetLocalRoot(new_root);
+    }
 
-    m_back = UIHelper::CreateStatic(xml, "back", this);
+    m_back = UIHelper::CreateStatic(xml, "back", this, false);
     m_back_v = UIHelper::CreateStatic(xml, "back_v", this, false);
 
     // XXX: replace with UIHelper
@@ -119,11 +129,11 @@ void CUIHudStatesWnd::InitFromXml(CUIXml& xml, LPCSTR path)
         weaponsParent = m_static_weapon;
     }
 
-    m_ui_health_bar = UIHelper::CreateProgressBar(xml, "progress_bar_health", healthBarParent);
+    m_ui_health_bar = UIHelper::CreateProgressBar(xml, "progress_bar_health", healthBarParent, !ShadowOfChernobylMode);
     m_ui_stamina_bar = UIHelper::CreateProgressBar(xml, "progress_bar_stamina", this, false);
     m_ui_armor_bar = UIHelper::CreateProgressBar(xml, "progress_bar_armor", armorBarParent, false);
 
-    if (m_static_armor || m_ui_armor_bar)
+    if (!ShadowOfChernobylMode && (m_static_armor || m_ui_armor_bar))
     {
         R_ASSERT3(m_static_armor && m_ui_armor_bar,
             "Please, provide both [m_static_armor] and [m_ui_armor_bar] tags in xml file",
@@ -136,10 +146,10 @@ void CUIHudStatesWnd::InitFromXml(CUIXml& xml, LPCSTR path)
     m_resist_back[ALife::infl_psi] = UIHelper::CreateStatic(xml, "resist_back_psi", this, false);
     // electra = no has CStatic!!
 
-    m_indik[ALife::infl_rad] = UIHelper::CreateStatic(xml, "indik_rad", this);
-    m_indik[ALife::infl_fire] = UIHelper::CreateStatic(xml, "indik_fire", this);
-    m_indik[ALife::infl_acid] = UIHelper::CreateStatic(xml, "indik_acid", this);
-    m_indik[ALife::infl_psi] = UIHelper::CreateStatic(xml, "indik_psi", this);
+    m_indik[ALife::infl_rad] = UIHelper::CreateStatic(xml, "indik_rad", this, false);
+    m_indik[ALife::infl_fire] = UIHelper::CreateStatic(xml, "indik_fire", this, false);
+    m_indik[ALife::infl_acid] = UIHelper::CreateStatic(xml, "indik_acid", this, false);
+    m_indik[ALife::infl_psi] = UIHelper::CreateStatic(xml, "indik_psi", this, false);
 
     m_lanim_name = xml.ReadAttrib("indik_rad", 0, "light_anim", "");
 
@@ -150,13 +160,15 @@ void CUIHudStatesWnd::InitFromXml(CUIXml& xml, LPCSTR path)
     m_ui_weapon_fmj_ammo = UIHelper::CreateStatic(xml, "static_fmj_ammo", this, false);
     m_ui_weapon_ap_ammo = UIHelper::CreateStatic(xml, "static_ap_ammo", this, false);
     m_ui_weapon_third_ammo = UIHelper::CreateStatic(xml, "static_third_ammo", this, false); //Alundaio: Option to display a third ammo type
-    m_fire_mode = UIHelper::CreateStatic(xml, "static_fire_mode", this);
+    m_fire_mode = UIHelper::CreateStatic(xml, "static_fire_mode", this, false);
     m_ui_grenade = UIHelper::CreateStatic(xml, "static_grenade", this, false);
 
-    m_ui_weapon_icon = UIHelper::CreateStatic(xml, "static_wpn_icon", weaponsParent);
-    m_ui_weapon_icon->SetShader(InventoryUtilities::GetEquipmentIconsShader());
-    //	m_ui_weapon_icon->Enable	( false );
-    m_ui_weapon_icon_rect = m_ui_weapon_icon->GetWndRect();
+    m_ui_weapon_icon = UIHelper::CreateStatic(xml, "static_wpn_icon", weaponsParent, false);
+    if (m_ui_weapon_icon)
+    {
+        m_ui_weapon_icon->SetShader(InventoryUtilities::GetEquipmentIconsShader());
+        m_ui_weapon_icon_rect = m_ui_weapon_icon->GetWndRect();
+    }
 
     m_progress_self = UIHelper::CreateProgressShape(xml, "progress", this, false);
 
@@ -191,6 +203,7 @@ void CUIHudStatesWnd::InitFromXml(CUIXml& xml, LPCSTR path)
         SwitchLA(false, static_cast<ALife::EInfluenceType>(i));
     }
 
+    m_initialized = true;
     xml.SetLocalRoot(stored_root);
 }
 
@@ -235,6 +248,9 @@ void CUIHudStatesWnd::Load_section_type(ALife::EInfluenceType type, LPCSTR secti
 
 void CUIHudStatesWnd::Update()
 {
+    if (!m_initialized)
+        return;
+
     CActor* actor = smart_cast<CActor*>(Level().CurrentViewEntity());
     if (!actor)
     {
@@ -258,11 +274,14 @@ void CUIHudStatesWnd::UpdateHealth(CActor* actor)
     //	}
 
     const float cur_health = actor->GetfHealth();
-    m_ui_health_bar->SetProgressPos(iCeil(cur_health * 100.0f * 35.f) / 35.f);
-    if (_abs(cur_health - m_last_health) > m_health_blink)
+    if (m_ui_health_bar)
     {
-        m_last_health = cur_health;
-        m_ui_health_bar->m_UIProgressItem.ResetColorAnimation();
+        m_ui_health_bar->SetProgressPos(iCeil(cur_health * 100.0f * 35.f) / 35.f);
+        if (_abs(cur_health - m_last_health) > m_health_blink)
+        {
+            m_last_health = cur_health;
+            m_ui_health_bar->m_UIProgressItem.ResetColorAnimation();
+        }
     }
 
     if (m_ui_stamina_bar)
@@ -351,7 +370,8 @@ void CUIHudStatesWnd::UpdateActiveItemInfo(CActor* actor)
         item->GetBriefInfo(m_item_info);
 
         //		UIWeaponBack.SetText		( str_name.c_str() );
-        m_fire_mode->SetText(m_item_info.fire_mode.c_str());
+        if (m_fire_mode)
+            m_fire_mode->SetText(m_item_info.fire_mode.c_str());
         SetAmmoIcon(m_item_info.icon.c_str());
 
         if (m_ui_weapon_cur_ammo)
@@ -416,7 +436,8 @@ void CUIHudStatesWnd::UpdateActiveItemInfo(CActor* actor)
             }
         }
 
-        m_fire_mode->Show(true);
+        if (m_fire_mode)
+            m_fire_mode->Show(true);
 
         if (m_ui_grenade)
         {
@@ -445,7 +466,8 @@ void CUIHudStatesWnd::UpdateActiveItemInfo(CActor* actor)
     }
     else
     {
-        m_ui_weapon_icon->Show(false);
+        if (m_ui_weapon_icon)
+            m_ui_weapon_icon->Show(false);
 
         if (m_ui_weapon_cur_ammo)
             m_ui_weapon_cur_ammo->Show(false);
@@ -462,7 +484,8 @@ void CUIHudStatesWnd::UpdateActiveItemInfo(CActor* actor)
         if (m_ui_weapon_sign_ammo)
             m_ui_weapon_sign_ammo->Show(false);
 
-        m_fire_mode->Show(false);
+        if (m_fire_mode)
+            m_fire_mode->Show(false);
 
         if (m_ui_grenade)
             m_ui_grenade->Show(false);
@@ -756,6 +779,9 @@ void CUIHudStatesWnd::UpdateIndicatorType(CActor* actor, ALife::EInfluenceType t
 
     //	float max_power = actor->conditions().GetZoneMaxPower( hit_type );
     //	protect = protect / max_power; // = 0..1
+    if (!m_indik[type])
+        return;
+
     m_indik[type]->Show(true);
 
     if (hit_power < EPS)
@@ -824,10 +850,8 @@ void CUIHudStatesWnd::UpdateIndicatorType(CActor* actor, ALife::EInfluenceType t
 }
 void CUIHudStatesWnd::SwitchLA(bool state, ALife::EInfluenceType type)
 {
-    if (state == m_cur_state_LA[type])
-    {
+    if (!m_indik[type] || state == m_cur_state_LA[type])
         return;
-    }
 
     if (state)
     {
@@ -853,22 +877,25 @@ float CUIHudStatesWnd::get_zone_cur_power(ALife::EHitType hit_type)
 
 void CUIHudStatesWnd::DrawZoneIndicators()
 {
+    if (!m_initialized)
+        return;
+
     CActor* actor = smart_cast<CActor*>(Level().CurrentViewEntity());
     if (!actor)
         return;
 
     UpdateIndicators(actor);
 
-    if (m_indik[ALife::infl_rad]->IsShown())
+    if (m_indik[ALife::infl_rad] && m_indik[ALife::infl_rad]->IsShown())
         m_indik[ALife::infl_rad]->Draw();
 
-    if (m_indik[ALife::infl_fire]->IsShown())
+    if (m_indik[ALife::infl_fire] && m_indik[ALife::infl_fire]->IsShown())
         m_indik[ALife::infl_fire]->Draw();
 
-    if (m_indik[ALife::infl_acid]->IsShown())
+    if (m_indik[ALife::infl_acid] && m_indik[ALife::infl_acid]->IsShown())
         m_indik[ALife::infl_acid]->Draw();
 
-    if (m_indik[ALife::infl_psi]->IsShown())
+    if (m_indik[ALife::infl_psi] && m_indik[ALife::infl_psi]->IsShown())
         m_indik[ALife::infl_psi]->Draw();
 }
 
@@ -927,6 +954,9 @@ void CUIHudStatesWnd::FakeUpdateIndicatorType(u8 t, float power)
 
     float max_power = actor->conditions().GetZoneMaxPower(hit_type);
     protect = protect / max_power; // = 0..1
+
+    if (!m_indik[type])
+        return;
 
     if (hit_power < EPS)
     {

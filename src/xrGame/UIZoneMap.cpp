@@ -93,9 +93,9 @@ void CUIZoneMap::Init(bool motionIconAttached)
 
     if (IsGameTypeSingle())
     {
-        CUIXmlInit::InitStatic(uiXml, "minimap:static_counter", 0, &m_Counter);
+        CUIXmlInit::InitStatic(uiXml, "minimap:static_counter", 0, &m_Counter, false);
         m_background.AttachChild(&m_Counter);
-        CUIXmlInit::InitStatic(uiXml, "minimap:static_counter:text_static", 0, &m_Counter_text);
+        CUIXmlInit::InitStatic(uiXml, "minimap:static_counter:text_static", 0, &m_Counter_text, false);
         m_Counter.AttachChild(&m_Counter_text);
 
         if (motionIconAttached)

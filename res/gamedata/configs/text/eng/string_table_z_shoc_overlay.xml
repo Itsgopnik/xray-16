@@ -1,0 +1,183 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!--
+    SHoC-mode overlay string table for OpenXRay's CoP UI code paths.
+    Loaded by CStringTable::Init (StringTable.cpp:60) which scans
+    text/<lang>/*.xml. SHoC archives don't contain these CoP-only keys,
+    so the engine showed them raw in the PDA. Last-write-wins per key —
+    safe to coexist with SHoC's bundled string tables.
+-->
+<string_table>
+
+    <!-- PDA Diary / Contacts. CoP code (UILogsWnd.cpp:115-120) reads the literal
+         text from <center_caption> in XML, appends this string, and re-sets it.
+         There is NO actor-name substitution, so we drop the "'s" prefix. -->
+    <string id="ui_logs_center_caption">
+        <text>Diary</text>
+    </string>
+
+    <!-- PDA Ranking (UIRankingWnd.cpp:128-134) — same mechanism as logs. -->
+    <string id="ui_ranking_center_caption">
+        <text>Ranking</text>
+    </string>
+
+    <!-- PDA Logs filter checkboxes (pda_logs.xml filter_news/_talk) -->
+    <string id="pda_filter_news">
+        <text>News</text>
+    </string>
+    <string id="pda_filter_talk">
+        <text>Conversations</text>
+    </string>
+    <string id="pda_date_filter">
+        <text>Date:</text>
+    </string>
+
+    <!-- PDA Ranking character info labels (pda_ranking.xml *_caption) -->
+    <string id="ui_inv_rank">
+        <text>Rank:</text>
+    </string>
+    <string id="ui_inv_community">
+        <text>Faction:</text>
+    </string>
+    <string id="ui_inv_reputation">
+        <text>Reputation:</text>
+    </string>
+    <string id="ui_inv_money">
+        <text>Money:</text>
+    </string>
+
+    <!-- Fallback variants without the ui_ prefix (engine sometimes strips it) -->
+    <string id="inv_rank">
+        <text>Rank:</text>
+    </string>
+    <string id="inv_community">
+        <text>Faction:</text>
+    </string>
+    <string id="inv_reputation">
+        <text>Reputation:</text>
+    </string>
+    <string id="inv_money">
+        <text>Money:</text>
+    </string>
+
+    <!-- PDA Statistics window (actor_statistic.xml — SHoC-native keys).
+         These keys appear in SHoC's original actor_statistic.xml but are not
+         defined in any string_table_*.xml shipped in the SHoC archives. -->
+    <string id="st_pda_player_statistic">
+        <text>Player statistics</text>
+    </string>
+    <string id="st_pda_detail_info">
+        <text>Detailed information</text>
+    </string>
+    <string id="st_pda_statistic_score">
+        <text>Statistics</text>
+    </string>
+
+    <!-- Capitalize SHoC's lowercase ui_st_* labels for the Statistics tab
+         character_info subwidget (rank/community/reputation captions). -->
+    <string id="ui_st_rank">
+        <text>Rank</text>
+    </string>
+    <string id="ui_st_community">
+        <text>Group</text>
+    </string>
+    <string id="ui_st_reputation">
+        <text>Reputation</text>
+    </string>
+    <string id="st_pda_stalker_kills">
+        <text>Stalkers killed</text>
+    </string>
+    <string id="st_pda_monster_kills">
+        <text>Mutants killed</text>
+    </string>
+    <string id="st_pda_quest_complete">
+        <text>Quests completed</text>
+    </string>
+    <string id="st_pda_total">
+        <text>Total</text>
+    </string>
+
+    <!-- Reputation labels (game_relations.reputation_names in system.ltx points
+         here). Capitalize for the Statistics-tab reputation value. -->
+    <string id="terrible">
+        <text>Terrible</text>
+    </string>
+    <string id="really_bad">
+        <text>Really bad</text>
+    </string>
+    <string id="bad">
+        <text>Bad</text>
+    </string>
+    <string id="neutral">
+        <text>Neutral</text>
+    </string>
+    <string id="indifferent">
+        <text>Neutral</text>
+    </string>
+    <string id="good">
+        <text>Good</text>
+    </string>
+    <string id="great">
+        <text>Great</text>
+    </string>
+    <string id="excellent">
+        <text>Excellent</text>
+    </string>
+
+    <!-- PDA Encyclopedia (CUIEncyclopediaWnd, SHoC-mode only) -->
+    <string id="ui_pda_encyclopedia_title">
+        <text>Encyclopedia</text>
+    </string>
+    <string id="ui_pda_encyclopedia_empty">
+        <text>No encyclopedia articles unlocked yet.</text>
+    </string>
+
+    <!-- Statistics detail-row headings (UIActorInfo.cpp:205) -->
+    <string id="st_detail_list_for_quests_count">
+        <text>Quest details</text>
+    </string>
+    <string id="st_detail_list_for_kills_count">
+        <text>Kill details</text>
+    </string>
+    <string id="st_detail_list_for_artefacts_count">
+        <text>Artefact details</text>
+    </string>
+    <string id="st_detail_list_for_community_relations">
+        <text>Community standing</text>
+    </string>
+    <string id="st_detail_list_for_total">
+        <text>Score breakdown</text>
+    </string>
+
+    <!-- C5: SHoC Ranking tab (Top-20 stalker leaderboard) -->
+    <string id="st_ui_pda_top20_title">
+        <text>Top 20 Stalkers</text>
+    </string>
+    <string id="st_ui_pda_top20_empty">
+        <text>No data available.</text>
+    </string>
+
+    <!-- C1: SHoC Tasks tab (active quest list + description) -->
+    <string id="st_ui_pda_tasks_title">
+        <text>Active Tasks</text>
+    </string>
+    <string id="st_ui_pda_tasks_empty">
+        <text>No active tasks.</text>
+    </string>
+
+    <!-- C4: SHoC Contacts tab (known stalker list + detail) -->
+    <string id="st_ui_pda_contacts_title">
+        <text>Contacts</text>
+    </string>
+    <string id="st_ui_pda_contacts_empty">
+        <text>No contacts.</text>
+    </string>
+
+    <!-- C3: SHoC Diary tab (news/journal feed) -->
+    <string id="st_ui_pda_diary_title">
+        <text>Diary</text>
+    </string>
+    <string id="st_ui_pda_diary_empty">
+        <text>No entries yet.</text>
+    </string>
+
+</string_table>

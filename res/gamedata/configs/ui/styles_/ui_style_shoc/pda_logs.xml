@@ -1,0 +1,70 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!--
+    SHoC-style PDA Diary/Logs panel for OpenXRay.
+    Loaded by CUILogsWnd (UILogsWnd.cpp:94). In CoP the eptDiary AND eptContacts
+    tabs both map to pUILogsWnd (see UIPdaWnd.cpp SetActiveSubdialog patch).
+    Required nodes (no false fallback): main_wnd, center_caption, logs_list,
+    filter_news, filter_talk, period_caption, period, btn_prev_period, btn_next_period.
+    Layout fits inside SHoC PDA inner area (~x=20..880, y=70..565).
+-->
+<w>
+    <main_wnd x="0" y="0" width="1024" height="768" update_delay="2900"/>
+
+    <!-- Title bar: shows actor name + logs heading -->
+    <center_caption x="50" y="85" width="500" height="20">
+        <text align="l" font="letterica18" r="231" g="168" b="12"/>
+    </center_caption>
+
+    <!-- Filter checkboxes top-right -->
+    <filter_news x="700" y="85" width="17" height="17">
+        <window_name>filter_news</window_name>
+        <texture>ui_PDA_checker</texture>
+        <text x="22" font="letterica16" r="225" g="225" b="250">pda_filter_news</text>
+        <options_item entry="pda_filter_news" group="pda_filter_logs"/>
+    </filter_news>
+
+    <filter_talk x="700" y="110" width="17" height="17">
+        <window_name>filter_talk</window_name>
+        <texture>ui_PDA_checker</texture>
+        <text x="22" font="letterica16" r="225" g="225" b="250">pda_filter_talk</text>
+        <options_item entry="pda_filter_talk" group="pda_filter_logs"/>
+    </filter_talk>
+
+    <!-- Date period label (CoP uses prev/next buttons; SHoC has no period switching) -->
+    <period_caption x="50" y="115" width="120" height="20">
+        <text align="l" font="letterica18" r="128" g="128" b="128">pda_date_filter</text>
+    </period_caption>
+    <period x="175" y="115" width="220" height="20">
+        <text align="l" font="letterica18" r="225" g="225" b="250"/>
+    </period>
+
+    <!-- Hidden prev/next period buttons (required nodes, no false fallback) -->
+    <btn_prev_period x="0" y="0" width="0" height="0">
+        <window_name>btn_prev_period</window_name>
+        <texture>ui_date_bt_left</texture>
+    </btn_prev_period>
+    <btn_next_period x="0" y="0" width="0" height="0">
+        <window_name>btn_next_period</window_name>
+        <texture>ui_date_bt_right</texture>
+    </btn_next_period>
+
+    <!-- Main scrollable log list, fills the rest of the parchment area -->
+    <logs_list x="50" y="145" width="810" height="420" item_height="35"
+               scroll_profile="pda" always_show_scroll="1">
+        <font font="letterica18" r="181" g="170" b="148"/>
+    </logs_list>
+
+    <!-- Per-entry layout. Engine renders one of these per log entry. -->
+    <logs_item x="0" y="0" width="800" height="30">
+        <date_static x="0" y="1" width="100" height="14">
+            <text align="l" font="letterica16" r="128" g="128" b="128"/>
+        </date_static>
+        <caption_static x="105" y="1" width="690" height="14">
+            <text align="l" font="letterica16" r="231" g="168" b="12"/>
+        </caption_static>
+        <text_static x="0" y="16" width="795" height="14" complex_mode="1">
+            <text align="l" font="letterica16" r="181" g="170" b="148"/>
+        </text_static>
+        <image x="0" y="0" width="0" height="0" stretch="1"/>
+    </logs_item>
+</w>

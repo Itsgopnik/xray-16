@@ -8,6 +8,7 @@
 CUICursor& GetUICursor() { return GEnv.UI->GetUICursor(); }
 UICore& UI() { return *GEnv.UI; }
 extern ENGINE_API Fvector2 g_current_font_scale;
+extern ENGINE_API bool ShadowOfChernobylMode;
 
 void S2DVert::rotate_pt(const Fvector2& pivot, const float cosA, const float sinA, const float kx)
 {
@@ -286,6 +287,219 @@ void UICore::ReadTextureInfo()
             _GetItem(itemsList, i, single_item);
             xr_strcat(single_item, ".xml");
             CUITextureMaster::ParseShTexInfo(single_item);
+        }
+    }
+
+    if (ShadowOfChernobylMode)
+    {
+        // SHoC's atlas descriptors are at config\ui\, not under textures_descr\.
+        // Load them so their atlas IDs are registered. Some XMLs (ui_hud.xml) may not
+        // be in texture-descriptor format and will silently skip via the non-fatal
+        // ParseShTexInfo path.
+        CUITextureMaster::ParseShTexInfo("ui_old_textures.xml");
+        CUITextureMaster::ParseShTexInfo("ui_hud.xml");
+        CUITextureMaster::ParseShTexInfo("ui_npc_unique.xml");
+        CUITextureMaster::ParseShTexInfo("ui_npc_monster.xml");
+        CUITextureMaster::ParseShTexInfo("ui_icons_npc.xml");
+        CUITextureMaster::ParseShTexInfo("ui_iconstotal.xml");
+        CUITextureMaster::ParseShTexInfo("ui_icons_map.xml");
+        CUITextureMaster::ParseShTexInfo("ui_mp_icon_rank.xml");
+
+        // SHoC stores UI elements as separate per-part DDS files rather than packed atlases.
+        // Read each DDS header to get the real pixel dimensions, then register an atlas entry
+        // for the ID that OpenXRay's CUIFrameWindow / CUIFrameLineWnd / CUIScrollBar expect.
+        // When SHoC has no _e (FrameLine end), reuse _b. For scrollbars that have only one
+        // monolithic DDS per element, reuse the same file for back/b/e and state variants.
+        struct { pcstr dds; pcstr id; } const mappings[] =
+        {
+            // PDA inner frame (frame2) — 9 parts for CUIFrameWindow
+            { "ui\\ui_pda_frame2_back", "ui_pda2_fr2_back" },
+            { "ui\\ui_pda_frame2_b",    "ui_pda2_fr2_b"    },
+            { "ui\\ui_pda_frame2_b",    "ui_pda2_fr2_e"    },
+            { "ui\\ui_pda_frame2_l",    "ui_pda2_fr2_l"    },
+            { "ui\\ui_pda_frame2_r",    "ui_pda2_fr2_r"    },
+            { "ui\\ui_pda_frame2_t",    "ui_pda2_fr2_t"    },
+            { "ui\\ui_pda_frame2_lt",   "ui_pda2_fr2_lt"   },
+            { "ui\\ui_pda_frame2_rt",   "ui_pda2_fr2_rt"   },
+            { "ui\\ui_pda_frame2_lb",   "ui_pda2_fr2_lb"   },
+            { "ui\\ui_pda_frame2_rb",   "ui_pda2_fr2_rb"   },
+
+            // PDA outer frame — same scheme, ui_pda_frame_* files
+            { "ui\\ui_pda_frame_back",  "ui_pda2_fr_back"  },
+            { "ui\\ui_pda_frame_b",     "ui_pda2_fr_b"     },
+            { "ui\\ui_pda_frame_b",     "ui_pda2_fr_e"     },
+            { "ui\\ui_pda_frame_l",     "ui_pda2_fr_l"     },
+            { "ui\\ui_pda_frame_r",     "ui_pda2_fr_r"     },
+            { "ui\\ui_pda_frame_t",     "ui_pda2_fr_t"     },
+            { "ui\\ui_pda_frame_lt",    "ui_pda2_fr_lt"    },
+            { "ui\\ui_pda_frame_rt",    "ui_pda2_fr_rt"    },
+            { "ui\\ui_pda_frame_lb",    "ui_pda2_fr_lb"    },
+            { "ui\\ui_pda_frame_rb",    "ui_pda2_fr_rb"    },
+
+            // Center delimiter — CUIFrameWindow expects all 9 subparts; reuse sub-frame DDS
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_ranking_back" },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_ranking_b"    },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_ranking_l"    },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_ranking_r"    },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_ranking_t"    },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_ranking_lt"   },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_ranking_rt"   },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_ranking_lb"   },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_ranking_rb"   },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_fraction_back" },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_fraction_b"    },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_fraction_l"    },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_fraction_r"    },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_fraction_t"    },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_fraction_lt"   },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_fraction_rt"   },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_fraction_lb"   },
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_fr_delimiter_fraction_rb"   },
+
+            // Scrollbar IDs INCLUDE the "ui\" prefix because scroll_bar.xml references
+            // them as "ui\ui_scb_..." and CUIFrameLineWnd appends _back/_b/_e to that base.
+            // Vertical scrollbar track (FrameLine: back/b/e)
+            { "ui\\ui_scb_back_v",       "ui\\ui_scb_back_v_back" },
+            { "ui\\ui_scb_back_v",       "ui\\ui_scb_back_v_b"    },
+            { "ui\\ui_scb_back_v",       "ui\\ui_scb_back_v_e"    },
+
+            // Vertical scroll box — FrameLine + state variants (e/d/t/h) for FixedScrollBar
+            { "ui\\ui_scb_scroll_box_v", "ui\\ui_scb_scroll_box_v_back" },
+            { "ui\\ui_scb_scroll_box_v", "ui\\ui_scb_scroll_box_v_b"    },
+            { "ui\\ui_scb_scroll_box_v", "ui\\ui_scb_scroll_box_v_e"    },
+            { "ui\\ui_scb_scroll_box_v", "ui\\ui_scb_scroll_box_v_d"    },
+            { "ui\\ui_scb_scroll_box_v", "ui\\ui_scb_scroll_box_v_t"    },
+            { "ui\\ui_scb_scroll_box_v", "ui\\ui_scb_scroll_box_v_h"    },
+
+            // Horizontal scrollbar track
+            { "ui\\ui_scb_back",         "ui\\ui_scb_back_back" },
+            { "ui\\ui_scb_back",         "ui\\ui_scb_back_b"    },
+            { "ui\\ui_scb_back",         "ui\\ui_scb_back_e"    },
+
+            // Horizontal scroll box — FrameLine + state variants
+            { "ui\\ui_scb_scroll_box",   "ui\\ui_scb_scroll_box_back" },
+            { "ui\\ui_scb_scroll_box",   "ui\\ui_scb_scroll_box_b"    },
+            { "ui\\ui_scb_scroll_box",   "ui\\ui_scb_scroll_box_e"    },
+            { "ui\\ui_scb_scroll_box",   "ui\\ui_scb_scroll_box_d"    },
+            { "ui\\ui_scb_scroll_box",   "ui\\ui_scb_scroll_box_t"    },
+            { "ui\\ui_scb_scroll_box",   "ui\\ui_scb_scroll_box_h"    },
+
+            // Horizontal split divider (FrameLine 3-part) — SHoC has ui_pda_horizontal_line
+            { "ui\\ui_pda_horizontal_line", "ui_pda2_split_back" },
+            { "ui\\ui_pda_horizontal_line", "ui_pda2_split_b"    },
+            { "ui\\ui_pda_horizontal_line", "ui_pda2_split_e"    },
+
+            // Map frame inside the PDA (CUIFrameWindow 9-part) — reuse ui_pda_frame_sub_*
+            { "ui\\ui_pda_frame_sub_back", "ui_pda2_mapframe_back" },
+            { "ui\\ui_pda_frame_sub_b",    "ui_pda2_mapframe_b"    },
+            { "ui\\ui_pda_frame_sub_l",    "ui_pda2_mapframe_l"    },
+            { "ui\\ui_pda_frame_sub_r",    "ui_pda2_mapframe_r"    },
+            { "ui\\ui_pda_frame_sub_t",    "ui_pda2_mapframe_t"    },
+            { "ui\\ui_pda_frame_sub_lt",   "ui_pda2_mapframe_lt"   },
+            { "ui\\ui_pda_frame_sub_rt",   "ui_pda2_mapframe_rt"   },
+            { "ui\\ui_pda_frame_sub_lb",   "ui_pda2_mapframe_lb"   },
+            { "ui\\ui_pda_frame_sub_rb",   "ui_pda2_mapframe_rb"   },
+
+            // Center delimiter ranking_03 — single vertical line as visual stand-in
+            { "ui\\ui_pda_vertical_line_l_l", "ui_pda2_delimiter_03" },
+
+            // Map markers — reuse SHoC PDA news/mission icons as visual stand-ins
+            { "ui\\ui_pda_icon_news_jobs",          "ui_pda2_trader"          },
+            { "ui\\ui_pda_icon_news_jobs",          "ui_pda2_guide"           },
+            { "ui\\ui_pda_icon_news_jobs",          "ui_pda2_mechanic"        },
+            { "ui\\ui_pda_icon_mission_in_progress","ui_pda2_secondary_task"  },
+            { "ui\\ui_pda_icon_mission_in_progress","ui_pda2_mtask_overlay"   },
+            { "ui\\ui_pda_contacts_online",         "ui_pda2_squad_leader"    },
+            { "ui\\ui_pda_icon_news_misc",          "ui_pda2_exit_point"      },
+            { "ui\\ui_pda_icon_news_knowledge",     "ui_pda2_important1"      },
+
+            // Character portrait frame overlays — reuse sub-frame background
+            { "ui\\ui_pda_frame_sub_back", "ui_fm_over_chars"    },
+            { "ui\\ui_pda_frame_sub_back", "ui_fm_base_fraction" },
+        };
+        for (const auto& m : mappings)
+        {
+            string_path fn;
+            if (!FS.exist(fn, "$game_textures$", m.dds, ".dds"))
+                continue;
+            IReader* r = FS.r_open(fn);
+            if (!r)
+                continue;
+            if (r->length() >= 20)
+            {
+                struct { u32 magic, size, flags, height, width; } hdr;
+                r->r(&hdr, sizeof(hdr));
+                if (hdr.magic == 0x20534444u) // "DDS "
+                {
+                    Frect rect;
+                    rect.set(0.0f, 0.0f, float(hdr.width), float(hdr.height));
+                    CUITextureMaster::RegisterTexture(m.id, m.dds, rect);
+                }
+            }
+            FS.r_close(r);
+        }
+
+        // Rank icons (sub-rects on ui\ui_hud.dds — inherited atlas layout from CS/CoP).
+        // Coords come from CS/CoP's textures_descr/ui_hud.xml; SHoC's ui_hud.dds shares
+        // the same layout. Registered here because SHoC's atlas descriptors lack these IDs.
+        struct { pcstr id; float x, y, w, h; } const hud_rects[] =
+        {
+            { "pre_novice",  0.0f, 728.0f, 46.0f, 47.0f },
+            { "novice",      0.0f, 775.0f, 46.0f, 47.0f },
+            { "experienced", 0.0f, 822.0f, 46.0f, 47.0f },
+            { "veteran",     0.0f, 869.0f, 46.0f, 47.0f },
+            { "master",    667.0f,  40.0f, 46.0f, 47.0f },
+        };
+        for (const auto& h : hud_rects)
+        {
+            Frect rect;
+            rect.set(h.x, h.y, h.x + h.w, h.y + h.h);
+            CUITextureMaster::RegisterTexture(h.id, "ui\\ui_hud", rect);
+        }
+
+        // Button stubs — copy atlas rects from existing SHoC button definitions to the
+        // CoP-specific IDs that don't exist in SHoC. State suffix (e/d/t/h) is preserved.
+        struct { pcstr target_prefix; pcstr source; } const button_aliases[] =
+        {
+            // Map navigation buttons → ui_button_ordinary_<state>
+            { "ui_mnav_bt_legend_",   "ui_button_ordinary_" },
+            { "ui_mnav_bt_up_",       "ui_button_ordinary_" },
+            { "ui_mnav_bt_down_",     "ui_button_ordinary_" },
+            { "ui_mnav_bt_left_",     "ui_button_ordinary_" },
+            { "ui_mnav_bt_right_",    "ui_button_ordinary_" },
+            { "ui_mnav_bt_center_",   "ui_button_ordinary_" },
+            { "ui_mnav_bt_zoom_in_",  "ui_button_ordinary_" },
+            { "ui_mnav_bt_zoom_out_", "ui_button_ordinary_" },
+            { "ui_mnav_bt_zmreset_",  "ui_button_ordinary_" },
+
+            // Task tab buttons
+            { "ui_task_bt_center_", "ui_button_ordinary_" },
+            { "ui_task_bt_tslist_", "ui_button_ordinary_" },
+            { "ui_task_bt_close_",  "ui_button_ordinary_" },
+
+            // Date filter arrows → spiner button (smaller, more arrow-like)
+            { "ui_date_bt_left_",  "ui_spiner_button_t_" },
+            { "ui_date_bt_right_", "ui_spiner_button_b_" },
+        };
+        pcstr const states[] = { "e", "d", "t", "h" };
+        for (const auto& a : button_aliases)
+        {
+            for (pcstr s : states)
+            {
+                string128 src, dst;
+                xr_sprintf(src, "%s%s", a.source, s);
+                xr_sprintf(dst, "%s%s", a.target_prefix, s);
+                TEX_INFO info;
+                if (CUITextureMaster::FindItem(src, info))
+                    CUITextureMaster::RegisterTexture(dst, info.file, info.rect);
+            }
+        }
+
+        // Date filter background tile → reuse listline_back rect
+        {
+            TEX_INFO info;
+            if (CUITextureMaster::FindItem("ui_listline_back", info))
+                CUITextureMaster::RegisterTexture("ui_date_back_tile", info.file, info.rect);
         }
     }
 }
