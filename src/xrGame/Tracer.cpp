@@ -12,7 +12,20 @@
 CTracer::CTracer()
 {
     cpcstr sh_name = READ_IF_EXISTS(pSettings, r_string, "bullet_manager", "tracer_shader", "effects\\bullet_tracer");
-    cpcstr tx_name = READ_IF_EXISTS(pSettings, r_string, "bullet_manager", "tracer_texture", "fx\\fx_tracer_weapons");
+    const char* tx_name = READ_IF_EXISTS(pSettings, r_string, "bullet_manager", "tracer_texture", "fx\\fx_tracer_weapons");
+
+    // SHoC: 'fx\\fx_tracer_weapons' is a CoP asset; the SHoC archives ship
+    // 'fx\\fx_tracer' instead.
+    if (ShadowOfChernobylMode)
+    {
+        string_path tracer_fn;
+        if (!FS.exist(tracer_fn, "$game_textures$", tx_name, ".dds"))
+        {
+            Msg("~ SHoC: tracer texture '%s' was not found, using 'fx\\fx_tracer'", tx_name);
+            tx_name = "fx\\fx_tracer";
+        }
+    }
+
     m_circle_size_k = pSettings->read_if_exists<float>("bullet_manager", "fire_circle_k", 2.0f);
 
     sh_Tracer->create(sh_name, tx_name);

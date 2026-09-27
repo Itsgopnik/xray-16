@@ -33,7 +33,16 @@ void CUICustomMap::Initialize(shared_str name, LPCSTR sh_name)
         levelIni = xr_new<CInifile>(map_cfg_fn);
     }
 
-    if (levelIni->section_exist("level_map"))
+    if (ShadowOfChernobylMode && pGameIni->section_exist(name))
+    {
+        // SHoC: the per-level map definitions live in game.ltx ([l01_escape] etc.,
+        // usually via game_maps_single.ltx): texture (map\\map_*), bound_rect and
+        // global_rect are all defined there. The level.ltx [level_map] sections
+        // shipped with SHoC are mostly empty or reference textures which never
+        // shipped (e.g. "ui_map_escape"), so prefer the game.ltx data.
+        Init_internal(name, *pGameIni, name, sh_name);
+    }
+    else if (levelIni->section_exist("level_map"))
     {
         Init_internal(name, *levelIni, "level_map", sh_name);
     }
@@ -72,6 +81,20 @@ void CUICustomMap::Init_internal(const shared_str& name, const CInifile& pLtx, c
     m_texture = pLtx.read_if_exists<pcstr>(sect_name, "texture", "ui\\ui_nomap2");
     if (pLtx.line_exist(m_name, "texture"))
         m_texture = pLtx.r_string(m_name, "texture"); // Override if needed
+
+    // SHoC: level.ltx entries may reference textures which never shipped
+    // with the SoC archives (e.g. "ui_map_escape" is a CoP/CoC asset).
+    // Fall back to SoC's own "no picture" texture instead of tripping the
+    // missing-texture warning path in the renderer.
+    if (ShadowOfChernobylMode && m_texture.size())
+    {
+        string_path tex_fn;
+        if (!FS.exist(tex_fn, "$game_textures$", m_texture.c_str(), ".dds"))
+        {
+            Msg("~ SHoC: level map texture '%s' was not found, using 'ui\\ui_map_nopic'", m_texture.c_str());
+            m_texture = "ui\\ui_map_nopic";
+        }
+    }
 
     Fvector4 tmp = pLtx.read_if_exists<Fvector4>(sect_name, "bound_rect", {-10000.0f, -10000.0f, 10000.0f, 10000.0f});
     pLtx.read_if_exists(tmp, m_name, "bound_rect"); // Override if needed

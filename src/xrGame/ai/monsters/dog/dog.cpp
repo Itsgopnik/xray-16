@@ -275,9 +275,26 @@ void CAI_Dog::start_animation()
         return;
     }
 
+    IKinematicsAnimated* skeleton = smart_cast<IKinematicsAnimated*>(Visual());
+    pcstr anim_name = get_current_animation();
+
+    // SHoC: some of the scripted dog idles (e.g. "sit_idle_1", "stand_threaten_0")
+    // were added after SHoC and are missing from its motion set. PlayCycle would
+    // fatally assert on them — substitute a pose-compatible cycle instead.
+    if (skeleton && ShadowOfChernobylMode && !skeleton->ID_Cycle_Safe(anim_name).valid())
+    {
+        Msg("~ SHoC: dog animation '%s' was not found, playing a fallback cycle", anim_name);
+        anim_name = (0 == strncmp(anim_name, "sit_", 4)) ? "sit_idle_0" : "stand_idle_1";
+        if (!skeleton->ID_Cycle_Safe(anim_name).valid())
+        {
+            Msg("~ SHoC: fallback dog animation '%s' was not found either, skipping", anim_name);
+            return; // do not capture the animation channel, keep the previous cycle
+        }
+    }
+
     b_state_anim = true;
     com_man().script_capture(ControlCom::eControlAnimation);
-    smart_cast<IKinematicsAnimated*>(Visual())->PlayCycle(get_current_animation(), TRUE, animation_end, this);
+    skeleton->PlayCycle(anim_name, TRUE, animation_end, this);
     b_state_end = true;
 }
 
