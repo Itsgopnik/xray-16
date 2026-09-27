@@ -304,6 +304,10 @@ void UICore::ReadTextureInfo()
         CUITextureMaster::ParseShTexInfo("ui_iconstotal.xml");
         CUITextureMaster::ParseShTexInfo("ui_icons_map.xml");
         CUITextureMaster::ParseShTexInfo("ui_mp_icon_rank.xml");
+        // ui_common.xml holds most of the shared SHoC widget atlases (sliders,
+        // scroll bars, tab buttons, checkboxes ...). Without it the engine falls
+        // back to CoP-only ids (ui_inGame2_opt_slider_*) and renders dummies.
+        CUITextureMaster::ParseShTexInfo("ui", "ui_common.xml");
 
         // SHoC stores UI elements as separate per-part DDS files rather than packed atlases.
         // Read each DDS header to get the real pixel dimensions, then register an atlas entry
@@ -500,6 +504,53 @@ void UICore::ReadTextureInfo()
             TEX_INFO info;
             if (CUITextureMaster::FindItem("ui_listline_back", info))
                 CUITextureMaster::RegisterTexture("ui_date_back_tile", info.file, info.rect);
+        }
+
+        // Scrollbar track and box textures from SHoC's scroll_bar.xml are single atlas
+        // entries (ui_common.xml), but CUIFrameLineWnd needs <id>_back/_b/_e.
+        // The SHoC textures are uniform tiles, so the same rect serves for all three parts.
+        pcstr const frameline_bases[] =
+        {
+            "ui_scroll_back",
+            "ui_scroll_box",
+            "ui_scroll_PDA_back",
+            "ui_scroll_PDA_back_hor",
+            "ui_scroll_PDA_box_e",
+        };
+        for (pcstr base : frameline_bases)
+        {
+            TEX_INFO info;
+            if (!CUITextureMaster::FindItem(base, info))
+                continue;
+
+            string128 back, first, second;
+            xr_sprintf(back, "%s_back", base);
+            xr_sprintf(first, "%s_b", base);
+            xr_sprintf(second, "%s_e", base);
+            if (CUITextureMaster::ItemExist(back))
+                continue;
+
+            CUITextureMaster::RegisterTexture(back, info.file, info.rect);
+            CUITextureMaster::RegisterTexture(first, info.file, info.rect);
+            CUITextureMaster::RegisterTexture(second, info.file, info.rect);
+        }
+
+        // State variants (disabled/touched/highlighted) of the PDA scroll boxes
+        struct { pcstr id; pcstr source; } const scroll_box_states[] =
+        {
+            { "ui_scroll_PDA_box_e_d",     "ui_scroll_PDA_box_e" },
+            { "ui_scroll_PDA_box_e_t",     "ui_scroll_PDA_box_t" },
+            { "ui_scroll_PDA_box_e_h",     "ui_scroll_PDA_box_h" },
+            // scroll_bar.xml uses the horizontal track texture for the horizontal box
+            { "ui_scroll_PDA_back_hor_d",  "ui_scroll_PDA_back_hor" },
+            { "ui_scroll_PDA_back_hor_t",  "ui_scroll_PDA_back_hor" },
+            { "ui_scroll_PDA_back_hor_h",  "ui_scroll_PDA_back_hor" },
+        };
+        for (const auto& s : scroll_box_states)
+        {
+            TEX_INFO info;
+            if (!CUITextureMaster::ItemExist(s.id) && CUITextureMaster::FindItem(s.source, info))
+                CUITextureMaster::RegisterTexture(s.id, info.file, info.rect);
         }
     }
 }

@@ -189,7 +189,9 @@ CUI3tButton* CScriptXmlInit::Init3tButton(LPCSTR path, CUIWindow* parent)
 CUITabControl* CScriptXmlInit::InitTab(LPCSTR path, CUIWindow* parent)
 {
     CUITabControl* pWnd = xr_new<CUITabControl>();
-    CUIXmlInit::InitTabControl(m_xml, path, 0, pWnd);
+    // SHoC: menu XMLs (e.g. ui\ui_mm_opt.xml) use tabs without 'id' attributes —
+    // allow auto-assigned default ids instead of asserting (same as UIPdaWnd).
+    CUIXmlInit::InitTabControl(m_xml, path, 0, pWnd, true, ShadowOfChernobylMode);
     _attach_child(pWnd, parent);
     return pWnd;
 }

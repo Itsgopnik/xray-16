@@ -147,6 +147,9 @@ void CUITrackBar::InitTrackBar(Fvector2 pos, Fvector2 size)
     }
     else // Try to initialize with SOC/CS texture names
     {
+        // ui_slider_e / ui_slider_d are frameline bases: CUIFrameLineWnd expands
+        // them to *_b/_back/_e, which exist in SHoC's ui_common.xml atlas
+        // (requires the ParseShTexInfo("ui", "ui_common.xml") call in ui_base.cpp).
         InitState(S_Enabled, UI_SLIDER_ENABLED, false);
         InitState(S_Disabled, UI_SLIDER_DISABLED, false);
     }

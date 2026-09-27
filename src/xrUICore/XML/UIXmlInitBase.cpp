@@ -850,6 +850,8 @@ bool CUIXmlInitBase::InitFrameLine(CUIXml& xml_doc, pcstr path, int index, CUIFr
     result &= InitTexture(xml_doc, path, index, pWnd, fatal);
 
     // Reapply stretch (previously applied in InitTexture) as a special case
+    // SHoC/CS: original XMLs don't ship stretch attributes and their frameline
+    // textures are designed to tile (see doc/soc/pda.md commit d8f5e7048).
     const int stretch_default = ClearSkyMode || ShadowOfChernobylMode ? 0 : 1;
     const int stretch_flag = xml_doc.ReadAttribInt(path, index, "stretch", stretch_default);
     pWnd->SetStretchTexture(stretch_flag);
