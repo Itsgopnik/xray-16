@@ -101,10 +101,19 @@ CGameTask* CGameTaskManager::GiveGameTaskToActor(const TASK_ID& id,
 CGameTask* CGameTaskManager::GiveGameTaskToActor(CGameTask* t, u32 timeToComplete, bool bCheckExisting, u32 timer_ttl)
 {
     t->CommitScriptHelperContents();
-    if (/* bCheckExisting &&*/ HasGameTask(t->m_ID, true))
+    Msg("[SHOC-TASK] give_task received: id=[%s] prio=%d type=%d check_existing=%d",
+        t->m_ID.c_str(), t->m_priority, static_cast<int>(t->GetTaskType()), static_cast<int>(bCheckExisting));
+    // SoC scripts (task_manager.script) never call set_task_type — the task stays
+    // 'dummy' and would be sorted into no bucket of the CoP task window.
+    if (t->GetTaskType() == eTaskTypeCount || t->GetTaskType() == eTaskTypeDummy)
     {
-        Msg("! task [%s] already inprocess", t->m_ID.c_str());
-        VERIFY2(0, make_string("give_task : Task [%s] already inprocess!", t->m_ID.c_str()));
+        t->m_task_type = eTaskTypeStoryline;
+        Msg("[SHOC-TASK]   task [%s] type unset -> defaulted to storyline", t->m_ID.c_str());
+    }
+    if (HasGameTask(t->m_ID, true))
+    {
+        Msg("[SHOC-TASK] task [%s] already inprocess — SoC scripts reuse task IDs, keeping silent duplicate skip", t->m_ID.c_str());
+        xr_delete(t); // adopt<2> would leak it otherwise
         return NULL;
     }
 

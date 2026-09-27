@@ -44,7 +44,16 @@ IC void stalker_movement_params::desired_direction(Fvector const* direction)
     cover_id("");
 
     m_desired_direction_impl = *direction;
-    VERIFY(fsimilar(m_desired_direction_impl.magnitude(), 1.f));
+    // SoC scripts may pass a non-normalized (or degenerate) direction vector.
+    // Normalize instead of asserting to keep debug sessions running.
+    if (fis_zero(m_desired_direction_impl.square_magnitude(), EPS))
+    {
+        // degenerate direction: treat as if no direction was set
+        m_desired_direction_impl.set(flt_max, flt_max, flt_max);
+        m_desired_direction = 0;
+        return;
+    }
+    m_desired_direction_impl.normalize();
     m_desired_direction = &m_desired_direction_impl;
 }
 

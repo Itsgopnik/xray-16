@@ -4,6 +4,12 @@
 #include <errno.h>
 #include <malloc.h>
 
+#if defined(XR_PLATFORM_WINDOWS)
+#define xr_aligned_msize_impl _msize
+#else
+#define xr_aligned_msize_impl malloc_usable_size
+#endif
+
 #include "xrMemory_align.h"
 
 /***
@@ -202,7 +208,7 @@ void* __stdcall xr_aligned_offset_realloc(void* memblock, size_t size, size_t al
     diff = (uintptr_t)memblock - stptr;
     /* Mov size is min of the size of data available and sizw requested.
     */
-    movsz = _msize((void*)stptr) - ((uintptr_t)memblock - stptr);
+    movsz = xr_aligned_msize_impl((void*)stptr) - ((uintptr_t)memblock - stptr);
     movsz = movsz > size ? size : movsz;
     reqsz = PTR_SZ + gap + align + size;
 
@@ -215,6 +221,7 @@ void* __stdcall xr_aligned_offset_realloc(void* memblock, size_t size, size_t al
     *
     * If yes, expand and then check if we need to move the data.
     */
+#if defined(XR_PLATFORM_WINDOWS)
     if ((stptr + align + PTR_SZ + gap) < (uintptr_t)memblock)
     {
         if ((ptr = (uintptr_t)malloc(reqsz)) == (uintptr_t)NULL)
@@ -232,6 +239,12 @@ void* __stdcall xr_aligned_offset_realloc(void* memblock, size_t size, size_t al
         else
             stptr = ptr;
     }
+#else
+    // POSIX has no _expand; always allocate a new block and move the data.
+    if ((ptr = (uintptr_t)malloc(reqsz)) == (uintptr_t)NULL)
+        return NULL;
+    bFree = 1;
+#endif
 
     if (ptr == ((uintptr_t)memblock - diff) && !(((size_t)memblock + gap + offset) & ~(align)))
     {
@@ -293,5 +306,5 @@ size_t __stdcall xr_aligned_msize(void* memblock)
 
     /* ptr is the pointer to the start of memory block*/
     ptr = *((uintptr_t*)ptr);
-    return _msize((void*)ptr);
+    return xr_aligned_msize_impl((void*)ptr);
 }
