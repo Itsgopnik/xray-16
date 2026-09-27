@@ -384,6 +384,40 @@ void UICore::ReadTextureInfo()
             { "ui\\ui_scb_scroll_box",   "ui\\ui_scb_scroll_box_t"    },
             { "ui\\ui_scb_scroll_box",   "ui\\ui_scb_scroll_box_h"    },
 
+            // Default-profile scrollbars (CUIListBox and other widgets without an
+            // explicit scroll_profile use plain ui_scroll_box_*/ui_scroll_back_* names).
+            // Map the missing CoP names onto the same SHoC scrollbar DDS set.
+            { "ui\\ui_scb_back_v",        "ui_scroll_back_back" },
+            { "ui\\ui_scb_back_v",        "ui_scroll_back_b"    },
+            { "ui\\ui_scb_back_v",        "ui_scroll_back_e"    },
+            { "ui\\ui_scb_scroll_box_v", "ui_scroll_box_back"   },
+            { "ui\\ui_scb_scroll_box_v", "ui_scroll_box_b"      },
+            { "ui\\ui_scb_scroll_box_v", "ui_scroll_box_e"      },
+            { "ui\\ui_scb_back",          "ui_scroll_back_hor_back" },
+            { "ui\\ui_scb_back",          "ui_scroll_back_hor_b"    },
+            { "ui\\ui_scb_back",          "ui_scroll_back_hor_e"    },
+            { "ui\\ui_scb_scroll_box",    "ui_scroll_box_hor_back" },
+            { "ui\\ui_scb_scroll_box",    "ui_scroll_box_hor_b"    },
+            { "ui\\ui_scb_scroll_box",    "ui_scroll_box_hor_e"    },
+
+            // PDA-style scrollbars (scroll_bar.xml profile "pda" references
+            // ui_scroll_pda_* which the SHoC archives don't contain — reuse ui_scb_*)
+            { "ui\\ui_scb_back_v",        "ui_scroll_pda_back_back" },
+            { "ui\\ui_scb_back_v",        "ui_scroll_pda_back_b"    },
+            { "ui\\ui_scb_back_v",        "ui_scroll_pda_back_e"    },
+            { "ui\\ui_scb_scroll_box_v", "ui_scroll_pda_box_e_back" },
+            { "ui\\ui_scb_scroll_box_v", "ui_scroll_pda_box_e_b"    },
+            { "ui\\ui_scb_scroll_box_v", "ui_scroll_pda_box_e_e"    },
+            { "ui\\ui_scb_scroll_box_v", "ui_scroll_pda_box_e_d"    },
+            { "ui\\ui_scb_scroll_box_v", "ui_scroll_pda_box_e_t"    },
+            { "ui\\ui_scb_scroll_box_v", "ui_scroll_pda_box_e_h"    },
+            { "ui\\ui_scb_back",          "ui_scroll_pda_back_hor_back" },
+            { "ui\\ui_scb_back",          "ui_scroll_pda_back_hor_b"    },
+            { "ui\\ui_scb_back",          "ui_scroll_pda_back_hor_e"    },
+            { "ui\\ui_scb_back",          "ui_scroll_pda_back_hor_d"    },
+            { "ui\\ui_scb_back",          "ui_scroll_pda_back_hor_h"    },
+            { "ui\\ui_scb_back",          "ui_scroll_pda_back_hor_t"    },
+
             // Horizontal split divider (FrameLine 3-part) — SHoC has ui_pda_horizontal_line
             { "ui\\ui_pda_horizontal_line", "ui_pda2_split_back" },
             { "ui\\ui_pda_horizontal_line", "ui_pda2_split_b"    },

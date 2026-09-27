@@ -159,6 +159,11 @@ void CRenderDevice::UpdateWindowProps()
     SDL_PumpEvents();
     UpdateWindowRects();
 
+    // The ImGui context may already be destroyed here (e.g. when the fatal
+    // error dialog is shown during engine shutdown). Check it before use.
+    if (!ImGui::GetCurrentContext())
+        return;
+
     ImGuiIO& io = ImGui::GetIO();
 
     io.DisplaySize = { static_cast<float>(psDeviceMode.Width), static_cast<float>(psDeviceMode.Height) };

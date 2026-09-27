@@ -135,6 +135,31 @@ void CUIPdaWnd::Init()
     }
 
     m_hint_wnd = UIHelper::CreateHint(uiXml, "hint_wnd", false);
+    if (!m_hint_wnd)
+    {
+        // SoC resources don't define a hint_wnd node in pda.xml, but CoP-era
+        // sub-windows (map navigation, task window) require a hint window.
+        // Build a small default one programmatically (drop-in compatibility).
+        auto ui = xr_new<UIHint>();
+        ui->SetAutoDelete(true);
+        ui->SetWndPos(Fvector2().set(0.0f, 0.0f));
+        ui->SetWndSize(Fvector2().set(210.0f, 120.0f));
+
+        auto* bg = xr_new<CUIFrameWindow>("Background");
+        bg->SetAutoDelete(true);
+        ui->AttachChild(bg);
+        bg->SetWndRect(Frect().set(0.0f, 0.0f, 210.0f, 100.0f));
+        bg->InitTexture("ui_icons_PDA_tooltips");
+
+        auto* text = xr_new<CUIStatic>("Text");
+        text->SetAutoDelete(true);
+        ui->AttachChild(text);
+        text->SetWndRect(Frect().set(10.0f, 10.0f, 190.0f, 100.0f));
+        text->SetTextComplexMode(true);
+        text->TextItemControl()->SetTextColor(color_argb(255, 240, 217, 182));
+
+        m_hint_wnd = ui;
+    }
 
     if (IsGameTypeSingle())
     {
@@ -144,6 +169,14 @@ void CUIPdaWnd::Init()
 
         if (ShadowOfChernobylMode)
         {
+            // Use the CoP task window (with the embedded mini-map, task focus button
+            // and zoom controls) laid out by the deployed ui_style_shoc/pda_tasks.xml.
+            // It matches the original SoC tasks tab (list left, map/description right).
+            // The custom CUISHoCTaskWnd is kept as a fallback.
+            pUITaskWnd = xr_new<CUITaskWnd>(m_hint_wnd);
+            if (!pUITaskWnd->Init())
+                xr_delete(pUITaskWnd);
+
             pUISHoCTaskWnd = xr_new<CUISHoCTaskWnd>(m_hint_wnd);
             if (!pUISHoCTaskWnd->Init())
                 xr_delete(pUISHoCTaskWnd);
@@ -329,7 +362,7 @@ void CUIPdaWnd::SetActiveSubdialog(const shared_str& section)
     const std::tuple<shared_str, pcstr, CUIWindow*> availableWindowsList[] =
     {
         { "eptMap",             nullptr, pUIMapWnd },
-        { "eptTasks",           nullptr, ShadowOfChernobylMode ? static_cast<CUIWindow*>(pUISHoCTaskWnd) : pUITaskWnd },
+        { "eptTasks",           nullptr, pUITaskWnd ? pUITaskWnd : static_cast<CUIWindow*>(pUISHoCTaskWnd) },
         { "eptFractionWar",     nullptr, pUIFactionWarWnd },
         { "eptStatistics",      "ui_pda_actor_info", pUIActorInfo },
         { "eptRanking",         nullptr, pUIRankingWnd },
@@ -425,7 +458,7 @@ void CUIPdaWnd::Show_MapWnd(bool status)
 
 void CUIPdaWnd::Show_ContactsWnd(bool status)
 {
-    if (true) // XXX: replace with contacts wnd pointer
+    if (pUISHoCContactsWnd) // SHoC contacts tab
     {
         if (status)
             SetActiveSubdialog("eptContacts");

@@ -51,11 +51,11 @@
     #define xr_internal_malloc(size) malloc(size)
     #define xr_internal_malloc_aligned(size, alignment) xr_aligned_malloc(size, alignment)
     #define xr_internal_malloc_nothrow(size) xr_malloc(size)
-    #define xr_internal_malloc_nothrow_aligned(size, alignment) mi_malloc_aligned(size, alignment)
-    #define xr_internal_small_alloc(size) xr_aligned_malloc(size)
+    #define xr_internal_malloc_nothrow_aligned(size, alignment) xr_aligned_malloc(size, alignment)
+    #define xr_internal_small_alloc(size) xr_aligned_malloc(size, 16)
     #define xr_internal_small_free(ptr) xr_aligned_free(ptr)
 
-    #define xr_internal_realloc(ptr, size) xr_aligned_realloc(ptr, size)
+    #define xr_internal_realloc(ptr, size) xr_aligned_realloc(ptr, size, 16)
     #define xr_internal_realloc_aligned(ptr, size, alignment) xr_aligned_realloc(ptr, size, alignment)
 
     #define xr_internal_free(ptr) xr_aligned_free(ptr)
@@ -72,21 +72,25 @@
     #endif
 
     #define xr_internal_malloc(size) malloc(size + xr_reserved_tail)
-    #define xr_internal_malloc_aligned(size, alignment) malloc(size + xr_reserved_tail)
+    #define xr_internal_malloc_aligned(size, alignment) xr_aligned_malloc(size + xr_reserved_tail, alignment)
     #define xr_internal_malloc_nothrow(size) malloc(size + xr_reserved_tail)
-    #define xr_internal_malloc_nothrow_aligned(size, alignment) malloc(size + xr_reserved_tail)
+    #define xr_internal_malloc_nothrow_aligned(size, alignment) xr_aligned_malloc(size + xr_reserved_tail, alignment)
     #define xr_internal_small_alloc(size) malloc(size + xr_reserved_tail)
     #define xr_internal_small_free(ptr) free(ptr)
 
     #define xr_internal_realloc(ptr, size) realloc(ptr, size + xr_reserved_tail)
-    #define xr_internal_realloc_aligned(ptr, size, alignment) realloc(ptr, size + xr_reserved_tail)
+    #define xr_internal_realloc_aligned(ptr, size, alignment) xr_aligned_realloc(ptr, size + xr_reserved_tail, alignment)
 
     #define xr_internal_free(ptr) free(ptr)
     #define xr_internal_free_size(ptr, size) free(ptr)
-    #define xr_internal_free_aligned(ptr, alignment) free(ptr)
-    #define xr_internal_free_size_aligned(ptr, size, alignment) free(ptr)
+    #define xr_internal_free_aligned(ptr, alignment) xr_aligned_free(ptr)
+    #define xr_internal_free_size_aligned(ptr, size, alignment) xr_aligned_free(ptr)
 #else
     #error Please, define explicitly which allocator you want to use
+#endif
+
+#if defined(USE_PURE_ALLOC)
+    #include "Memory/xrMemory_align.h"
 #endif
 
 xrMemory Memory;

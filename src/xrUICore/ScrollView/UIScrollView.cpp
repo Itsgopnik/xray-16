@@ -120,6 +120,9 @@ void CUIScrollView::RemoveWindow(CUIWindow* pWnd)
 
 void CUIScrollView::Clear()
 {
+    if (!m_pad) // InitScrollView wasn't called yet
+        return;
+
     m_pad->DetachAll();
     m_flags.set(eNeedRecalc, true);
     ScrollToBegin();

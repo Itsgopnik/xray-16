@@ -341,8 +341,8 @@ target_sources_grouped(
     Memory/xalloc.h
     xrMemory.cpp
     xrMemory.h
-    #Memory/xrMemory_align.cpp
-    #Memory/xrMemory_align.h
+    Memory/xrMemory_align.cpp
+    Memory/xrMemory_align.h
 )
 
 target_sources_grouped(

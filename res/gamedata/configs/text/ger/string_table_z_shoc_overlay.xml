@@ -1,0 +1,157 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!--
+    Deutsches Pendant zu res/gamedata/configs/text/eng/string_table_z_shoc_overlay.xml
+    Wird automatisch geladen, wenn die Systemsprache des Spiels 'ger' ist
+    (CStringTable::Init scannt text/<sprache>/*.xml).
+-->
+<string_table>
+
+    <string id="ui_logs_center_caption">
+        <text>Tagebuch</text>
+    </string>
+    <string id="ui_ranking_center_caption">
+        <text>Rangliste</text>
+    </string>
+    <string id="pda_filter_news">
+        <text>Nachrichten</text>
+    </string>
+    <string id="pda_filter_talk">
+        <text>Gespräche</text>
+    </string>
+    <string id="pda_date_filter">
+        <text>Datum:</text>
+    </string>
+
+    <string id="ui_inv_rank">
+        <text>Rang:</text>
+    </string>
+    <string id="ui_inv_community">
+        <text>Gruppierung:</text>
+    </string>
+    <string id="ui_inv_reputation">
+        <text>Reputation:</text>
+    </string>
+    <string id="ui_inv_money">
+        <text>Geld:</text>
+    </string>
+
+    <string id="inv_rank">
+        <text>Rang:</text>
+    </string>
+    <string id="inv_community">
+        <text>Gruppierung:</text>
+    </string>
+    <string id="inv_reputation">
+        <text>Reputation:</text>
+    </string>
+    <string id="inv_money">
+        <text>Geld:</text>
+    </string>
+
+    <string id="st_pda_player_statistic">
+        <text>Spielerstatistik</text>
+    </string>
+    <string id="st_pda_detail_info">
+        <text>Detailinformationen</text>
+    </string>
+    <string id="st_pda_statistic_score">
+        <text>Statistik</text>
+    </string>
+
+    <string id="ui_st_rank">
+        <text>Rang</text>
+    </string>
+    <string id="ui_st_community">
+        <text>Gruppe</text>
+    </string>
+    <string id="ui_st_reputation">
+        <text>Reputation</text>
+    </string>
+    <string id="st_pda_stalker_kills">
+        <text>Getötete Stalker</text>
+    </string>
+    <string id="st_pda_monster_kills">
+        <text>Getötete Mutanten</text>
+    </string>
+    <string id="st_pda_quest_complete">
+        <text>Abgeschlossene Aufträge</text>
+    </string>
+    <string id="st_pda_total">
+        <text>Gesamt</text>
+    </string>
+
+    <string id="terrible">
+        <text>Furchtbar</text>
+    </string>
+    <string id="really_bad">
+        <text>Ziemlich schlecht</text>
+    </string>
+    <string id="bad">
+        <text>Schlecht</text>
+    </string>
+    <string id="neutral">
+        <text>Neutral</text>
+    </string>
+    <string id="indifferent">
+        <text>Neutral</text>
+    </string>
+    <string id="good">
+        <text>Gut</text>
+    </string>
+    <string id="great">
+        <text>Sehr gut</text>
+    </string>
+    <string id="excellent">
+        <text>Ausgezeichnet</text>
+    </string>
+
+    <string id="ui_pda_encyclopedia_title">
+        <text>Enzyklopädie</text>
+    </string>
+    <string id="ui_pda_encyclopedia_empty">
+        <text>Noch keine Enzyklopädie-Artikel freigeschaltet.</text>
+    </string>
+
+    <string id="st_detail_list_for_quests_count">
+        <text>Auftragsdetails</text>
+    </string>
+    <string id="st_detail_list_for_kills_count">
+        <text>Kill-Details</text>
+    </string>
+    <string id="st_detail_list_for_artefacts_count">
+        <text>Artefakt-Details</text>
+    </string>
+    <string id="st_detail_list_for_community_relations">
+        <text>Ruf bei den Gruppierungen</text>
+    </string>
+    <string id="st_detail_list_for_total">
+        <text>Punkte-Aufschlüsselung</text>
+    </string>
+
+    <!-- SHoC PDA-Fenster -->
+    <string id="st_ui_pda_top20_title">
+        <text>Top 20 Stalker</text>
+    </string>
+    <string id="st_ui_pda_top20_empty">
+        <text>Keine Daten verfügbar.</text>
+    </string>
+    <string id="st_ui_pda_tasks_title">
+        <text>Aktive Aufträge</text>
+    </string>
+    <string id="st_ui_pda_tasks_empty">
+        <text>Keine aktiven Aufträge.</text>
+    </string>
+    <string id="st_ui_pda_contacts_title">
+        <text>Kontakte</text>
+    </string>
+    <string id="st_ui_pda_contacts_empty">
+        <text>Keine Kontakte.</text>
+    </string>
+    <string id="st_ui_pda_diary_title">
+        <text>Tagebuch</text>
+    </string>
+    <string id="st_ui_pda_diary_empty">
+        <text>Noch keine Einträge.</text>
+    </string>
+
+</string_table>

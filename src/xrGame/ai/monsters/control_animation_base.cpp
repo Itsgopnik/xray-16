@@ -529,7 +529,8 @@ void CControlAnimationBase::UpdateAnimCount()
         {
             xr_sprintf(s, "Error! No animation: %s for monster %s", (*it)->target_name.c_str(), m_object->cName().c_str());
             Msg("! %s", s);
-            VERIFY2(count != 0, s);
+            // Missing animations are handled below (removed from storage).
+            // Don't VERIFY here: SoC resources can lack some motion variants.
             subjectsToDelete.emplace_back(std::distance(m_anim_storage.begin(), it));
         }
     }

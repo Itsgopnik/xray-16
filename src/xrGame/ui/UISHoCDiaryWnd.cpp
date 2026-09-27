@@ -46,6 +46,7 @@ bool CUISHoCDiaryWnd::Init()
     AttachChild(m_view);
     m_view->SetWndPos({ 21.0f, 82.0f });
     m_view->SetWndSize({ kViewW, 381.0f });
+    m_view->InitScrollView(); // creates m_pad and scrollbar
 
     m_empty_label = xr_new<CUIStatic>("DiaryEmpty");
     m_empty_label->SetAutoDelete(true);

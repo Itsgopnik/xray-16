@@ -1388,8 +1388,15 @@ u32 CUIXmlInitBase::GetColor(const CUIXml& xml_doc, pcstr path, int index, u32 d
 {
     if (cpcstr clr_def = xml_doc.ReadAttrib(path, index, "color", nullptr))
     {
-        VERIFY(GetColorDefs()->find(clr_def) != GetColorDefs()->end());
-        return (*m_pColorDefs)[clr_def];
+        const auto it = GetColorDefs()->find(clr_def);
+        if (it == GetColorDefs()->end())
+        {
+            // SoC resources use color tokens that the CoP-style color_defs.xml
+            // doesn't define. Don't crash — fall back to the default color.
+            Msg("! [compat] color definition [%s] not found (path [%s]); using default", clr_def, path);
+            return def_clr;
+        }
+        return it->second;
     }
     const int r = xml_doc.ReadAttribInt(path, index, "r", color_get_R(def_clr));
     const int g = xml_doc.ReadAttribInt(path, index, "g", color_get_G(def_clr));
