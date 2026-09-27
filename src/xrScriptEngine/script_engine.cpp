@@ -661,20 +661,50 @@ int CScriptEngine::lua_panic(lua_State* L)
 
 void CScriptEngine::lua_error(lua_State* L)
 {
+    extern bool ShadowOfChernobylMode; // defined in xrEngine (x_ray.cpp)
+
     print_output(L, "", LUA_ERRRUN);
     on_error(L);
 
-#if !XRAY_EXCEPTIONS
-    xrDebug::Fatal(DEBUG_INFO, "LUA error: %s", lua_tostring(L, -1));
-#else
+#if !defined(LUABIND_NO_EXCEPTIONS)
+    // exception-enabled luabind context: the caller (luabind) expects a throw
     throw lua_tostring(L, -1);
+#else
+    if (ShadowOfChernobylMode)
+    {
+        // SHoC: original 1.0006 scripts contain unguarded lookup paths (e.g. the
+        // task_manager defend_lager restore). Log and return instead, so a
+        // script error cannot kill the whole savegame load.
+        Msg("~ SHoC: lua error tolerated: %s",
+            lua_isstring(L, -1) ? lua_tostring(L, -1) : "(no error string)");
+        return;
+    }
+
+    // LUABIND_NO_EXCEPTIONS context - throwing out of it ends in
+    // std::unexpected()/terminate. Report and die explicitly instead.
+    xrDebug::Fatal(DEBUG_INFO, "LUA error: %s", lua_tostring(L, -1));
 #endif
 }
 
 int CScriptEngine::lua_pcall_failed(lua_State* L)
 {
+    extern bool ShadowOfChernobylMode; // defined in xrEngine (x_ray.cpp)
+
     print_output(L, "", LUA_ERRRUN);
     on_error(L);
+
+    if (ShadowOfChernobylMode)
+    {
+        // SHoC: original 1.0006 scripts contain unguarded lookup paths
+        // (e.g. task_manager defend_lager restore with a stale/offline target id).
+        // Log and keep running - same as an "ignore" click on the error dialog.
+        // The duplicated error object stays on the stack as the msg-handler result
+        // (a msg handler must return an object; popping it would corrupt the stack).
+        Msg("~ SHoC: lua error tolerated: %s",
+            lua_isstring(L, -1) ? lua_tostring(L, -1) : "(no error string)");
+        lua_pushvalue(L, -1);
+        return LUA_OK;
+    }
 
     luabind::detail::stack_pop pop{ L, lua_isstring(L, -1) ? 1 : 0 };
 
@@ -711,7 +741,12 @@ void CScriptEngine::setup_callbacks()
     if (!debugger() || !debugger()->Active())
 #endif
     {
-#if !XRAY_EXCEPTIONS
+#if defined(LUABIND_NO_EXCEPTIONS)
+        // LUABIND_NO_EXCEPTIONS (luabind side) needs the error callback to report
+        // pcall failures — otherwise its call_error() hits the assert/terminate
+        // fallback. The old '#if !XRAY_EXCEPTIONS' (engine side) never set this
+        // callback in exception-enabled builds, making every script error call
+        // std::terminate() instead of reaching our handler.
         luabind::set_error_callback(CScriptEngine::lua_error);
 #endif
 
