@@ -148,36 +148,5 @@
         <text>Score breakdown</text>
     </string>
 
-    <!-- C5: SHoC Ranking tab (Top-20 stalker leaderboard) -->
-    <string id="st_ui_pda_top20_title">
-        <text>Top 20 Stalkers</text>
-    </string>
-    <string id="st_ui_pda_top20_empty">
-        <text>No data available.</text>
-    </string>
-
-    <!-- C1: SHoC Tasks tab (active quest list + description) -->
-    <string id="st_ui_pda_tasks_title">
-        <text>Active Tasks</text>
-    </string>
-    <string id="st_ui_pda_tasks_empty">
-        <text>No active tasks.</text>
-    </string>
-
-    <!-- C4: SHoC Contacts tab (known stalker list + detail) -->
-    <string id="st_ui_pda_contacts_title">
-        <text>Contacts</text>
-    </string>
-    <string id="st_ui_pda_contacts_empty">
-        <text>No contacts.</text>
-    </string>
-
-    <!-- C3: SHoC Diary tab (news/journal feed) -->
-    <string id="st_ui_pda_diary_title">
-        <text>Diary</text>
-    </string>
-    <string id="st_ui_pda_diary_empty">
-        <text>No entries yet.</text>
-    </string>
 
 </string_table>

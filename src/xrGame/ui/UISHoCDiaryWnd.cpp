@@ -2,59 +2,85 @@
 #include "UISHoCDiaryWnd.h"
 
 #include "UIXmlInit.h"
+#include "UIHelper.h"
 #include "UIInventoryUtilities.h"
-#include "xrUICore/Static/UIStatic.h"
+#include "UINewsItemWnd.h"
+#include "xrUICore/ListBox/UIListBox.h"
 #include "xrUICore/ScrollView/UIScrollView.h"
+#include "xrUICore/Static/UIAnimatedStatic.h"
+#include "xrUICore/TabControl/UITabControl.h"
+#include "xrUICore/Windows/UIFrameWindow.h"
+#include "xrUICore/Windows/UIFrameLineWnd.h"
 #include "Actor.h"
-#include "Level.h"
 #include "game_news.h"
 #include "alife_registry_wrappers.h"
 
 #define SHOC_DIARY_XML "events_new.xml"
-
-namespace
-{
-    constexpr u32 kColorTitle = color_argb(255, 231, 168, 12);
-    constexpr u32 kColorCaption = color_argb(255, 231, 168, 12);
-    constexpr u32 kColorText = color_argb(255, 225, 225, 250);
-    constexpr u32 kColorMuted = color_argb(255, 181, 170, 148);
-
-    constexpr float kViewW = 720.0f;
-}
+#define SHOC_NEWS_XML "news.xml"
 
 CUISHoCDiaryWnd::CUISHoCDiaryWnd() : CUIWindow("CUISHoCDiaryWnd") {}
-CUISHoCDiaryWnd::~CUISHoCDiaryWnd() = default;
 
 bool CUISHoCDiaryWnd::Init()
 {
-    SetWndPos({ 110.0f, 90.0f });
-    SetWndSize({ 761.0f, 475.0f });
+    CUIXml xml;
+    if (!xml.Load(CONFIG_PATH, UI_PATH, UI_PATH_DEFAULT, SHOC_DIARY_XML, false))
+        return false;
 
-    CUIXml uiXml;
-    uiXml.Load(CONFIG_PATH, UI_PATH, UI_PATH_DEFAULT, SHOC_DIARY_XML, false);
+    CUIXmlInit::InitWindow(xml, "main_wnd", 0, this);
 
-    m_title = xr_new<CUIStatic>("DiaryTitle");
-    m_title->SetAutoDelete(true);
-    AttachChild(m_title);
-    m_title->SetWndPos({ 21.0f, 56.0f });
-    m_title->SetWndSize({ 400.0f, 22.0f });
-    m_title->TextItemControl()->SetTextColor(kColorTitle);
-    m_title->TextItemControl()->SetTextST("st_ui_pda_diary_title");
+    // Left part: filter tabs and journal articles
+    CUIWindow* left = this;
+    if (CUIFrameWindow* frame = UIHelper::CreateFrameWindow(xml, "main_wnd:left_frame", this, false))
+    {
+        left = frame;
+        CUIXmlInit::InitAutoStaticGroup(xml, "main_wnd:left_frame", 0, frame);
+    }
 
-    m_view = xr_new<CUIScrollView>();
-    m_view->SetAutoDelete(true);
-    AttachChild(m_view);
-    m_view->SetWndPos({ 21.0f, 82.0f });
-    m_view->SetWndSize({ kViewW, 381.0f });
+    CUIWindow* left_header = UIHelper::CreateFrameLine(xml, "main_wnd:left_frame:left_frame_header", left, false);
+    if (!left_header)
+        left_header = left;
 
-    m_empty_label = xr_new<CUIStatic>("DiaryEmpty");
-    m_empty_label->SetAutoDelete(true);
-    AttachChild(m_empty_label);
-    m_empty_label->SetWndPos({ 21.0f, 200.0f });
-    m_empty_label->SetWndSize({ kViewW, 22.0f });
-    m_empty_label->TextItemControl()->SetTextColor(kColorMuted);
-    m_empty_label->TextItemControl()->SetTextST("st_ui_pda_diary_empty");
-    m_empty_label->Show(false);
+    constexpr pcstr filter_path = "main_wnd:left_frame:left_frame_header:filter_tab";
+    if (xml.NavigateToNode(filter_path))
+    {
+        m_filter_tab = xr_new<CUITabControl>();
+        m_filter_tab->SetAutoDelete(true);
+        left_header->AttachChild(m_filter_tab);
+        CUIXmlInit::InitTabControl(xml, filter_path, 0, m_filter_tab, false, true);
+        m_filter_tab->SetMessageTarget(this);
+    }
+
+    constexpr pcstr anim_path = "main_wnd:left_frame:left_frame_header:anim_static";
+    if (xml.NavigateToNode(anim_path))
+    {
+        auto* anim = xr_new<CUIAnimatedStatic>();
+        anim->SetAutoDelete(true);
+        left_header->AttachChild(anim);
+        CUIXmlInit::InitAnimatedStatic(xml, anim_path, 0, anim);
+    }
+
+    CUIWindow* left_work_area = UIHelper::CreateNormalWindow(xml, "main_wnd:left_frame:work_area", left, false);
+    m_src_list = UIHelper::CreateListBox(xml, "main_wnd:left_frame:work_area:src_list",
+        left_work_area ? left_work_area : left, false);
+    if (m_src_list)
+        m_src_list->SetMessageTarget(this);
+
+    // Right part: journal article or news
+    CUIWindow* right = this;
+    if (CUIFrameWindow* frame = UIHelper::CreateFrameWindow(xml, "main_wnd:right_frame", this, false))
+    {
+        right = frame;
+        CUIXmlInit::InitAutoStaticGroup(xml, "main_wnd:right_frame", 0, frame);
+    }
+    UIHelper::CreateFrameLine(xml, "main_wnd:right_frame:right_frame_header", right, false);
+
+    CUIWindow* right_work_area = UIHelper::CreateNormalWindow(xml, "main_wnd:right_frame:work_area", right, false);
+    m_view = UIHelper::CreateScrollView(xml, "main_wnd:right_frame:work_area:scroll_view",
+        right_work_area ? right_work_area : right, false);
+    if (!m_view)
+        return false;
+
+    m_journal.Setup(m_src_list, m_view, nullptr, nullptr);
 
     return true;
 }
@@ -62,71 +88,84 @@ bool CUISHoCDiaryWnd::Init()
 void CUISHoCDiaryWnd::Show(bool status)
 {
     if (status)
-        FillList();
+    {
+        if (m_filter_tab && m_filter_tab->GetActiveIndex() < 0)
+            m_filter_tab->SetActiveTabByIndex(0);
+
+        const int index = m_filter_tab ? m_filter_tab->GetActiveIndex() : 0;
+        ApplyFilter(index == int(EFilter::News) ? EFilter::News : EFilter::Journal);
+    }
+    else if (m_filter == EFilter::News)
+        InventoryUtilities::SendInfoToActor("ui_pda_news_hide");
+
     inherited::Show(status);
 }
 
-void CUISHoCDiaryWnd::FillList()
+void CUISHoCDiaryWnd::Update()
 {
-    if (!m_view)
+    if (m_filter == EFilter::News && NewsCount() != m_shown_news_count)
+        FillNews();
+
+    inherited::Update();
+}
+
+void CUISHoCDiaryWnd::SendMessage(CUIWindow* pWnd, s16 msg, void* pData)
+{
+    if (pWnd == m_filter_tab && msg == TAB_CHANGED)
+    {
+        const int index = m_filter_tab->GetActiveIndex();
+        ApplyFilter(index == int(EFilter::News) ? EFilter::News : EFilter::Journal);
+        return;
+    }
+
+    if (m_journal.OnListMessage(pWnd, msg, pData))
         return;
 
-    m_view->Clear();
+    inherited::SendMessage(pWnd, msg, pData);
+}
 
+void CUISHoCDiaryWnd::ApplyFilter(EFilter filter)
+{
+    if (m_filter == EFilter::News && filter != EFilter::News)
+        InventoryUtilities::SendInfoToActor("ui_pda_news_hide");
+
+    m_filter = filter;
+
+    if (m_src_list)
+        m_src_list->Show(filter == EFilter::Journal);
+
+    if (filter == EFilter::Journal)
+        m_journal.Rebuild();
+    else
+        FillNews();
+}
+
+size_t CUISHoCDiaryWnd::NewsCount()
+{
     if (!Actor() || !Actor()->game_news_registry)
-    {
-        m_empty_label->Show(true);
-        return;
-    }
+        return 0;
+    return Actor()->game_news_registry->registry().objects().size();
+}
 
+void CUISHoCDiaryWnd::FillNews()
+{
+    m_view->Clear();
+    m_shown_news_count = NewsCount();
+
+    if (!m_shown_news_count)
+        return;
+
+    CUIXml xml;
+    if (!xml.Load(CONFIG_PATH, UI_PATH, UI_PATH_DEFAULT, SHOC_NEWS_XML, false))
+        return;
+
+    // Newest first
     GAME_NEWS_VECTOR& news = Actor()->game_news_registry->registry().objects();
-    if (news.empty())
-    {
-        m_empty_label->Show(true);
-        return;
-    }
-    m_empty_label->Show(false);
-
-    // Newest entries first.
     for (auto it = news.rbegin(); it != news.rend(); ++it)
     {
-        const GAME_NEWS_DATA& n = *it;
-
-        shared_str date_str =
-            InventoryUtilities::GetDateAsString(n.receive_time, InventoryUtilities::edpDateToDay);
-
-        LPCSTR caption = n.news_caption.c_str();
-        xr_string header = date_str.c_str();
-        if (caption && xr_strlen(caption))
-        {
-            header += "  ";
-            header += StringTable().translate(caption).c_str();
-        }
-
-        CUIStatic* cap = xr_new<CUIStatic>("DiaryCaption");
-        cap->SetWndPos({ 0.0f, 0.0f });
-        cap->SetWndSize({ kViewW - 20.0f, 18.0f });
-        cap->SetTextColor(kColorCaption);
-        cap->TextItemControl()->SetText(header.c_str());
-        m_view->AddWindow(cap, true);
-
-        LPCSTR body = n.news_text.c_str();
-        if (body && xr_strlen(body))
-        {
-            CUIStatic* txt = xr_new<CUIStatic>("DiaryText");
-            txt->SetWndPos({ 0.0f, 0.0f });
-            txt->SetWndSize({ kViewW - 20.0f, 20.0f });
-            txt->SetTextColor(kColorText);
-            txt->SetTextComplexMode(true);
-            txt->TextItemControl()->SetText(StringTable().translate(body).c_str());
-            txt->AdjustHeightToText();
-            m_view->AddWindow(txt, true);
-        }
-
-        // Blank spacer between entries.
-        CUIStatic* spacer = xr_new<CUIStatic>("DiarySpacer");
-        spacer->SetWndPos({ 0.0f, 0.0f });
-        spacer->SetWndSize({ kViewW - 20.0f, 8.0f });
-        m_view->AddWindow(spacer, true);
+        auto* item = xr_new<CUINewsItemWnd>();
+        item->Init(xml, it->m_type == GAME_NEWS_DATA::eTalk ? "talk_item" : "news_item");
+        item->Setup(*it);
+        m_view->AddWindow(item, true);
     }
 }

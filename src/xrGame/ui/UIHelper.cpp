@@ -64,6 +64,14 @@ CUIStatic* UIHelper::CreateStatic(CUIXml& xml, LPCSTR ui_path, int index, CUIWin
     return ui;
 }
 
+void UIHelper::CreateStatics(CUIXml& xml, LPCSTR ui_path, CUIWindow* parent)
+{
+    const XML_NODE root = xml.GetLocalRoot() ? xml.GetLocalRoot() : xml.GetRoot();
+    const int count = static_cast<int>(xml.GetNodesNum(root, ui_path));
+    for (int i = 0; i < count; ++i)
+        CreateStatic(xml, ui_path, i, parent, false);
+}
+
 CUIScrollView* UIHelper::CreateScrollView(CUIXml& xml, LPCSTR ui_path, CUIWindow* parent, bool critical /*= true*/)
 {
     // If it's not critical element, then don't crash if it doesn't exist

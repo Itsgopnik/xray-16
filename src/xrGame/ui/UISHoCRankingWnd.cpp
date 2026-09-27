@@ -2,77 +2,135 @@
 #include "UISHoCRankingWnd.h"
 
 #include "UIXmlInit.h"
-#include "UIInventoryUtilities.h"
+#include "UIHelper.h"
+#include "UICharacterInfo.h"
 #include "xrUICore/Static/UIStatic.h"
-#include "xrUICore/ListBox/UIListBox.h"
-#include "xrUICore/ListBox/UIListBoxItem.h"
+#include "xrUICore/Static/UIAnimatedStatic.h"
+#include "xrUICore/ScrollView/UIScrollView.h"
+#include "xrUICore/Windows/UIFrameWindow.h"
+#include "xrUICore/Windows/UIFrameLineWnd.h"
+#include "Actor.h"
+#include "ai_space.h"
 #include "alife_simulator.h"
 #include "alife_object_registry.h"
-#include "ai_space.h"
-#include "xrAICore/Navigation/game_graph.h"
-#include "character_community.h"
 #include "xrServerEntities/xrServer_Objects_ALife_Monsters.h"
 
-#define SHOC_RANKING_XML "actor_diary.xml"
+#define SHOC_RANKING_XML "stalkers_ranking.xml"
+#define SHOC_RANKING_CHARACTER_XML "stalkers_ranking_character.xml"
+
+CSE_ALifeTraderAbstract* ch_info_get_from_id(u16 id);
 
 namespace
 {
-    constexpr u32 kColorTitle = color_argb(255, 231, 168, 12);
-    constexpr u32 kColorRow = color_argb(255, 225, 225, 250);
-    constexpr u32 kColorMuted = color_argb(255, 181, 170, 148);
+constexpr int TOP_LIST_SIZE = 20;
+}
 
-    constexpr float kColIdxW = 32.0f;
-    constexpr float kColNameW = 180.0f;
-    constexpr float kColRankW = 120.0f;
-    constexpr float kColCommunityW = 86.0f;
+CUISHoCRankingItem::CUISHoCRankingItem(CUISHoCRankingWnd* owner, bool selectable)
+    : CUIWindow("CUISHoCRankingItem"), m_owner(owner), m_selectable(selectable) {}
+
+void CUISHoCRankingItem::Init(CUIXml& xml, pcstr path)
+{
+    CUIXmlInit::InitWindow(xml, path, 0, this);
+
+    const XML_NODE stored_root = xml.GetLocalRoot();
+    xml.SetLocalRoot(xml.NavigateToNode(path, 0));
+
+    m_text1 = UIHelper::CreateStatic(xml, "text_1", this, false);
+    m_text2 = UIHelper::CreateStatic(xml, "text_2", this, false);
+    m_text3 = UIHelper::CreateStatic(xml, "text_3", this, false);
+    CUIXmlInit::InitAutoStaticGroup(xml, "auto", 0, this);
+
+    if (m_text2)
+        m_stored_alpha = color_get_A(m_text2->GetTextColor());
+
+    xml.SetLocalRoot(stored_root);
+}
+
+void CUISHoCRankingItem::SetSelected(bool b)
+{
+    if (!m_selectable)
+        return;
+
+    CUISelectable::SetSelected(b);
+
+    for (CUIStatic* text : { m_text1, m_text2, m_text3 })
+    {
+        if (text)
+            text->SetTextColor(subst_alpha(text->GetTextColor(), b ? 255 : m_stored_alpha));
+    }
+
+    if (b)
+        m_owner->ShowHumanInfo(m_humanID);
+}
+
+bool CUISHoCRankingItem::OnMouseDown(int mouse_btn)
+{
+    if (mouse_btn == MOUSE_1 && m_selectable)
+    {
+        m_owner->SelectItem(this);
+        return true;
+    }
+    return false;
 }
 
 CUISHoCRankingWnd::CUISHoCRankingWnd() : CUIWindow("CUISHoCRankingWnd") {}
-CUISHoCRankingWnd::~CUISHoCRankingWnd() = default;
 
 bool CUISHoCRankingWnd::Init()
 {
-    SetWndPos({ 110.0f, 90.0f });
-    SetWndSize({ 761.0f, 475.0f });
+    CUIXml xml;
+    if (!xml.Load(CONFIG_PATH, UI_PATH, UI_PATH_DEFAULT, SHOC_RANKING_XML, false))
+        return false;
 
-    CUIXml uiXml;
-    const bool xmlLoaded = uiXml.Load(CONFIG_PATH, UI_PATH, UI_PATH_DEFAULT, SHOC_RANKING_XML, false);
+    CUIXmlInit::InitWindow(xml, "main_wnd", 0, this);
 
-    m_title = xr_new<CUIStatic>("RankingTitle");
-    m_title->SetAutoDelete(true);
-    AttachChild(m_title);
-    m_title->SetWndPos({ 21.0f, 56.0f });
-    m_title->SetWndSize({ 420.0f, 22.0f });
-    m_title->TextItemControl()->SetTextColor(kColorTitle);
-    m_title->TextItemControl()->SetTextST("st_ui_pda_top20_title");
-
-    m_header = xr_new<CUIStatic>("RankingHeader");
-    m_header->SetAutoDelete(true);
-    AttachChild(m_header);
-    m_header->SetWndPos({ 21.0f, 72.0f });
-    m_header->SetWndSize({ 420.0f, 14.0f });
-    m_header->TextItemControl()->SetTextColor(kColorMuted);
-    m_header->TextItemControl()->SetText("#    Name                      Rank             Faction");
-
-    m_list = xr_new<CUIListBox>();
-    m_list->SetAutoDelete(true);
-    AttachChild(m_list);
-    if (!(xmlLoaded && CUIXmlInit::InitListBox(uiXml, "list", 0, m_list, false)))
+    // Right part: selected character
+    CUIWindow* char_parent = this;
+    if (CUIFrameWindow* frame = UIHelper::CreateFrameWindow(xml, "chicon_frame_window", this, false))
     {
-        m_list->SetWndPos({ 21.0f, 88.0f });
-        m_list->SetWndSize({ 420.0f, 375.0f });
-        m_list->SetItemHeight(16.0f);
+        char_parent = frame;
+        UIHelper::CreateFrameLine(xml, "chicon_frame_line", frame, false);
     }
-    m_list->SetTextColor(kColorRow);
 
-    m_empty_label = xr_new<CUIStatic>("RankingEmpty");
-    m_empty_label->SetAutoDelete(true);
-    AttachChild(m_empty_label);
-    m_empty_label->SetWndPos({ 21.0f, 200.0f });
-    m_empty_label->SetWndSize({ 420.0f, 22.0f });
-    m_empty_label->TextItemControl()->SetTextColor(kColorMuted);
-    m_empty_label->TextItemControl()->SetTextST("st_ui_pda_top20_empty");
-    m_empty_label->Show(false);
+    // Left part: top list
+    CUIWindow* list_parent = this;
+    CUIWindow* header = nullptr;
+    if (CUIFrameWindow* frame = UIHelper::CreateFrameWindow(xml, "info_frame_window", this, false))
+    {
+        list_parent = frame;
+        header = UIHelper::CreateFrameLine(xml, "info_frame_line", frame, false);
+    }
+
+    if (xml.NavigateToNode("a_static"))
+    {
+        auto* anim = xr_new<CUIAnimatedStatic>();
+        anim->SetAutoDelete(true);
+        (header ? header : list_parent)->AttachChild(anim);
+        CUIXmlInit::InitAnimatedStatic(xml, "a_static", 0, anim);
+    }
+
+    m_list = UIHelper::CreateScrollView(xml, "list", list_parent, false);
+    if (!m_list)
+        return false;
+
+    if (xml.NavigateToNode("character_info"))
+    {
+        auto* char_wnd = xr_new<CUIWindow>("character_info");
+        char_wnd->SetAutoDelete(true);
+        char_parent->AttachChild(char_wnd);
+        CUIXmlInit::InitWindow(xml, "character_info", 0, char_wnd);
+
+        CUIXml char_xml;
+        if (char_xml.Load(CONFIG_PATH, UI_PATH, UI_PATH_DEFAULT, SHOC_RANKING_CHARACTER_XML, false))
+        {
+            m_character_info = xr_new<CUICharacterInfo>();
+            m_character_info->SetAutoDelete(true);
+            char_wnd->AttachChild(m_character_info);
+            m_character_info->InitCharacterInfo({ 0.0f, 0.0f }, char_wnd->GetWndSize(), &char_xml);
+        }
+    }
+
+    CUIXmlInit::InitAutoStaticGroup(xml, "left_auto", 0, list_parent);
+    CUIXmlInit::InitAutoStaticGroup(xml, "right_auto", 0, char_parent);
 
     return true;
 }
@@ -86,74 +144,118 @@ void CUISHoCRankingWnd::Show(bool status)
 
 void CUISHoCRankingWnd::FillList()
 {
-    if (!m_list)
-        return;
-
     m_list->Clear();
+    if (m_character_info)
+        m_character_info->ClearInfo();
 
-    if (!ai().get_alife())
-    {
-        m_empty_label->Show(true);
+    CUIXml xml;
+    if (!xml.Load(CONFIG_PATH, UI_PATH, UI_PATH_DEFAULT, SHOC_RANKING_XML, false))
         return;
-    }
+
+    const XML_NODE list_node = xml.NavigateToNode("stalkers_list", 0);
+    if (!list_node)
+        return;
+    xml.SetLocalRoot(list_node);
 
     struct Entry
     {
+        u16 id;
         CHARACTER_RANK_VALUE rank;
-        xr_string name;
-        shared_str community;
     };
     xr_vector<Entry> entries;
-    entries.reserve(128);
 
-    const auto& objects = ai().alife().objects().objects();
-    for (auto it = objects.begin(); it != objects.end(); ++it)
+    if (ai().get_alife())
     {
-        CSE_ALifeHumanStalker* stalker = smart_cast<CSE_ALifeHumanStalker*>(it->second);
-        if (!stalker)
-            continue;
-        if (!stalker->g_Alive())
-            continue;
-
-        Entry e;
-        e.rank = stalker->CSE_ALifeTraderAbstract::Rank();
-        e.name = stalker->CSE_ALifeTraderAbstract::m_character_name;
-        e.community = CHARACTER_COMMUNITY::IndexToId(
-            stalker->CSE_ALifeTraderAbstract::m_community_index);
-        entries.push_back(e);
+        for (const auto& [id, object] : ai().alife().objects().objects())
+        {
+            auto* stalker = smart_cast<CSE_ALifeHumanStalker*>(object);
+            if (stalker && stalker->g_Alive())
+                entries.push_back({ id, stalker->CSE_ALifeTraderAbstract::Rank() });
+        }
     }
 
-    std::sort(entries.begin(), entries.end(),
-        [](const Entry& a, const Entry& b) { return a.rank > b.rank; });
-
-    const size_t count = entries.size() < 20 ? entries.size() : 20;
-    if (count == 0)
+    const u16 actor_id = Actor() ? Actor()->ID() : u16(-1);
+    if (actor_id != u16(-1))
     {
-        m_empty_label->Show(true);
+        if (CSE_ALifeTraderAbstract* actor = ch_info_get_from_id(actor_id))
+            entries.push_back({ actor_id, actor->Rank() });
+    }
+
+    if (entries.empty())
+    {
+        AddItem(xml, "no_items", 0, u16(-1), false);
         return;
     }
-    m_empty_label->Show(false);
 
-    for (size_t i = 0; i < count; ++i)
+    std::stable_sort(entries.begin(), entries.end(),
+        [](const Entry& a, const Entry& b) { return a.rank > b.rank; });
+
+    int actor_place = -1;
+    for (int i = 0; i < int(entries.size()); ++i)
     {
-        CUIListBoxItem* item = m_list->AddItem();
-        item->SetTextColor(kColorRow);
-        // CUIListBox::AddItem stretches the default text field to full list width;
-        // collapse it so AddTextField() starts at x=0 instead of x=full_width.
-        item->GetTextItem()->SetWidth(0.0f);
-
-        string32 idx_buf;
-        xr_sprintf(idx_buf, sizeof(idx_buf), "%2u.", static_cast<u32>(i + 1));
-        item->AddTextField(idx_buf, kColIdxW);
-
-        LPCSTR name = entries[i].name.empty() ? "<unnamed>" : entries[i].name.c_str();
-        item->AddTextField(name, kColNameW);
-
-        LPCSTR rank_key = InventoryUtilities::GetRankAsText(entries[i].rank);
-        shared_str rank_translated = StringTable().translate(rank_key);
-        item->AddTextField(rank_translated.c_str(), kColRankW);
-
-        shared_str comm_translated = StringTable().translate(entries[i].community);
-        item->AddTextField(comm_translated.c_str(), kColCommunityW);
+        if (entries[i].id == actor_id)
+        {
+            actor_place = i;
+            break;
+        }
     }
+
+    // The actor is always shown: in its own place, or instead of the last
+    // entry (preceded by "...") when it is not in the top list.
+    const int count = std::min(int(entries.size()), TOP_LIST_SIZE);
+    for (int i = 0; i < count; ++i)
+    {
+        const bool actor_out_of_top = i == count - 1 && actor_place >= TOP_LIST_SIZE;
+        if (entries[i].id == actor_id || actor_out_of_top)
+        {
+            if (actor_out_of_top)
+                AddItem(xml, "item_ellipsis", 0, u16(-1), false);
+            AddItem(xml, "item_actor", actor_place + 1, actor_id, true);
+        }
+        else
+            AddItem(xml, "item_human", i + 1, entries[i].id, true);
+    }
+
+    SelectItem(m_list->GetItem(0));
+}
+
+void CUISHoCRankingWnd::AddItem(CUIXml& xml, pcstr path, int place, u16 id, bool selectable)
+{
+    auto* item = xr_new<CUISHoCRankingItem>(this, selectable);
+    item->Init(xml, path);
+    item->m_humanID = id;
+
+    if (id != u16(-1))
+    {
+        if (CSE_ALifeTraderAbstract* trader = ch_info_get_from_id(id))
+        {
+            string64 buff;
+            if (item->m_text1)
+            {
+                xr_sprintf(buff, "%d.", place);
+                item->m_text1->SetText(buff);
+            }
+            if (item->m_text2)
+                item->m_text2->SetText(trader->m_character_name.c_str());
+            if (item->m_text3)
+            {
+                xr_sprintf(buff, "%d", trader->Rank());
+                item->m_text3->SetText(buff);
+            }
+        }
+    }
+
+    m_list->AddWindow(item, true);
+}
+
+void CUISHoCRankingWnd::SelectItem(CUIWindow* item)
+{
+    if (item)
+        m_list->SetSelected(item);
+}
+
+void CUISHoCRankingWnd::ShowHumanInfo(u16 id)
+{
+    if (m_character_info && id != u16(-1))
+        m_character_info->InitCharacter(id);
 }

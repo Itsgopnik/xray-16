@@ -32,6 +32,8 @@ public:
     static CUIWindow* CreateNormalWindow(CUIXml& xml, LPCSTR ui_path, CUIWindow* parent, bool critical = true);
     static CUIStatic* CreateStatic(CUIXml& xml, LPCSTR ui_path, CUIWindow* parent, bool critical = true);
     static CUIStatic* CreateStatic(CUIXml& xml, LPCSTR ui_path, int index, CUIWindow* parent, bool critical = true);
+    // Creates a static for every node named ui_path (SOC style: repeated <left_auto_static> nodes)
+    static void CreateStatics(CUIXml& xml, LPCSTR ui_path, CUIWindow* parent);
     static CUIScrollView* CreateScrollView(CUIXml& xml, LPCSTR ui_path, CUIWindow* parent, bool critical = true);
     static CUIProgressBar* CreateProgressBar(CUIXml& xml, LPCSTR ui_path, CUIWindow* parent, bool critical = true);
     static CUIProgressShape* CreateProgressShape(CUIXml& xml, LPCSTR ui_path, CUIWindow* parent, bool critical = true);

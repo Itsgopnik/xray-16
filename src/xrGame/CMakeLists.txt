@@ -2146,6 +2146,8 @@ target_sources(xrGame PRIVATE
     ui/ui_af_params.h
     ui/UIArtefactPanel.cpp
     ui/UIArtefactPanel.h
+    ui/UIArticleBrowser.cpp
+    ui/UIArticleBrowser.h
     ui/UIBoosterInfo.cpp
     ui/UIBoosterInfo.h
     ui/UIBuyWeaponTab.cpp
