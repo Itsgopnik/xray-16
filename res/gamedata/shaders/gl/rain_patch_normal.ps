@@ -4,10 +4,15 @@
 #include "iostructs\p_rain_patch.h"
 
 
-uniform float3x4 m_sunmask;	// ortho-projection
-//Texture2D	s_water;
-Texture3D	s_water;
-Texture2D	s_waterFall;
+uniform float3x4 m_sunmask;   // ortho-projection
+#ifdef USE_SHOC_RESOURCES
+// SHoC archives don't ship the volume bump texture (water\water_SBumpVolume).
+// The blender binds water\water_normal instead and we sample it as 2D.
+Texture2D s_water;
+#else
+Texture3D s_water;
+#endif
+Texture2D s_waterFall;
 uniform float4	RainDensity;	//	float
 uniform float4	WorldX;	//	Float3	
 uniform float4	WorldZ;	//	Float3	
@@ -16,9 +21,13 @@ uniform float4	WorldZ;	//	Float3
 float3	GetNVNMap(float2 tc, float time)
 {
 	//	Unpack NVidia normal map
+#ifdef USE_SHOC_RESOURCES
+	float4 water = tex2D( s_water, tc ) - 0.5;
+#else
 //	float4 water = s_water.SampleLevel( smp_linear, float3(tc, time), 0 ) - 0.5;
 //	float4 water = s_water.Sample( smp_linear, float3(tc, time)) - 0.5;
 	float4 water = tex3D( s_water, float3(tc, time), -3.0 ) - 0.5;
+#endif
 
 	//	Swizzle
 	water.xyz = water.wyz;

@@ -54,12 +54,23 @@ void CBlender_rain::Compile(CBlender_Compile& C)
 
         //		C.r_Sampler		("s_water",	"water" DELIMITER "water_water");
 
-        //C.r_Sampler		("s_water",	"water" DELIMITER "water_studen");
-        //C.r_Sampler		("s_water",	"water" DELIMITER "water_normal");
+        //C.r_Sampler("s_water",	"water" DELIMITER "water_studen");
+        //C.r_Sampler("s_water",	"water" DELIMITER "water_normal");
 
-        C.r_Sampler("s_water", "water" DELIMITER "water_SBumpVolume");
-        //C.r_Sampler		("s_waterFall",	"water" DELIMITER "water_normal");
-        C.r_Sampler("s_waterFall", "water" DELIMITER "water_flowing_nmap");
+        if (ShadowOfChernobylMode)
+        {
+            // SHoC: water_SBumpVolume/water_flowing_nmap are CoP assets; SoC ships
+            // water_normal (+ anim frames) instead. Sampled as 2D — see
+            // rain_patch_normal.ps (USE_SHOC_RESOURCES).
+            C.r_Sampler("s_water", "water" DELIMITER "water_normal");
+            C.r_Sampler("s_waterFall", "water" DELIMITER "water_normal");
+        }
+        else
+        {
+            C.r_Sampler("s_water", "water" DELIMITER "water_SBumpVolume");
+            //C.r_Sampler("s_waterFall",	"water" DELIMITER "water_normal");
+            C.r_Sampler("s_waterFall", "water" DELIMITER "water_flowing_nmap");
+        }
 
         C.r_End();
 
@@ -161,12 +172,20 @@ void CBlender_rain_msaa::Compile(CBlender_Compile& C)
 
         //		C.r_Sampler		("s_water",	"water" DELIMITER "water_water");
 
-        //C.r_Sampler		("s_water",	"water" DELIMITER "water_studen");
-        //C.r_Sampler		("s_water",	"water" DELIMITER "water_normal");
+        //C.r_Sampler("s_water",	"water" DELIMITER "water_studen");
+        //C.r_Sampler("s_water",	"water" DELIMITER "water_normal");
 
-        C.r_Sampler("s_water", "water" DELIMITER "water_SBumpVolume");
-        //C.r_dx11Texture		("s_waterFall",	"water" DELIMITER "water_normal");
-        C.r_Sampler("s_waterFall", "water" DELIMITER "water_flowing_nmap");
+        if (ShadowOfChernobylMode)
+        {
+            C.r_Sampler("s_water", "water" DELIMITER "water_normal");
+            C.r_Sampler("s_waterFall", "water" DELIMITER "water_normal");
+        }
+        else
+        {
+            C.r_Sampler("s_water", "water" DELIMITER "water_SBumpVolume");
+            //C.r_dx11Texture	("s_waterFall",	"water" DELIMITER "water_normal");
+            C.r_Sampler("s_waterFall", "water" DELIMITER "water_flowing_nmap");
+        }
 
         C.r_End();
 

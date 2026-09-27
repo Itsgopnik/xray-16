@@ -68,9 +68,17 @@ void CBlender_rain::Compile(CBlender_Compile& C)
         // C.r_dx11Texture		("s_water",	"water\\water_studen");
         // C.r_dx11Texture		("s_water",	"water\\water_normal");
 
-        C.r_dx11Texture("s_water", "water\\water_SBumpVolume");
-        // C.r_dx11Texture		("s_waterFall",	"water\\water_normal");
-        C.r_dx11Texture("s_waterFall", "water\\water_flowing_nmap");
+        if (ShadowOfChernobylMode)
+        {
+            // SHoC: see glRainBlender.cpp
+            C.r_dx11Texture("s_water", "water\\water_normal");
+            C.r_dx11Texture("s_waterFall", "water\\water_normal");
+        }
+        else
+        {
+            C.r_dx11Texture("s_water", "water\\water_SBumpVolume");
+            C.r_dx11Texture("s_waterFall", "water\\water_flowing_nmap");
+        }
 
         C.r_End();
 
@@ -191,9 +199,17 @@ void CBlender_rain_msaa::Compile(CBlender_Compile& C)
         // C.r_dx11Texture		("s_water",	"water\\water_studen");
         // C.r_dx11Texture		("s_water",	"water\\water_normal");
 
-        C.r_dx11Texture("s_water", "water\\water_SBumpVolume");
-        // C.r_dx11Texture		("s_waterFall",	"water\\water_normal");
-        C.r_dx11Texture("s_waterFall", "water\\water_flowing_nmap");
+        if (ShadowOfChernobylMode)
+        {
+            // SHoC: see glRainBlender.cpp
+            C.r_dx11Texture("s_water", "water\\water_normal");
+            C.r_dx11Texture("s_waterFall", "water\\water_normal");
+        }
+        else
+        {
+            C.r_dx11Texture("s_water", "water\\water_SBumpVolume");
+            C.r_dx11Texture("s_waterFall", "water\\water_flowing_nmap");
+        }
 
         C.r_End();
 
