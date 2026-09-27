@@ -446,6 +446,23 @@ void CLocatorAPI::LoadArchive(archive& A, pcstr entrypoint)
             // R_ASSERT3 (root, "path not found ", read_path.c_str());
             xr_strcpy(fs_entry_point, sizeof fs_entry_point, root->m_Path);
         }
+        else
+        {
+            // ShoC archives (no ini header) may be mounted by the early scan,
+            // before the "$fs_root$" alias is created in setup_fs_path().
+            // Without a base path all entries would register under a relative
+            // "gamedata/" prefix which can never match the absolute-path
+            // lookups. Fall back to the archive's own folder instead.
+            string_path archiveFolder;
+            xr_strcpy(archiveFolder, sizeof archiveFolder, A.path.c_str());
+            pstr lastSep = strrchr(archiveFolder, _DELIMITER);
+            const pstr lastFwd = strrchr(archiveFolder, '/');
+            if (lastFwd && (!lastSep || lastFwd > lastSep))
+                lastSep = lastFwd;
+            if (lastSep)
+                lastSep[1] = '\0';
+            xr_strcpy(fs_entry_point, sizeof fs_entry_point, archiveFolder);
+        }
         xr_strcat(fs_entry_point, "gamedata" DELIMITER);
     }
     if (entrypoint)
