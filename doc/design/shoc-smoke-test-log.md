@@ -25,6 +25,7 @@ through `-test_script` (Debug/Mixed builds only):
 | `menu` | Boot to the main menu, quit from the menu |
 | `play` | `-nogameintro -start server(all/single/alife/new)`: new game, wait 20 s, kill the nearest living enemy without story id (`obj:kill(actor)`), save as `smoke_test`, `load smoke_test` in the same process, check the enemy is still dead, quit |
 | `load` | `-start server(smoke_test/single/alife/load)`: cold load, check the enemy is still dead, quit |
+| `dogs` (optional) | New game, `ai_ignore_actor 1`, `g_god 1`, actor moved next to the nearest dog pack for 90 s so the group states (rest, idle animations) run, quit. The report counts dog animation fallbacks |
 
 A phase fails on any driver `FAIL`, a non-zero exit code, a timeout, or a missing
 `KERNEL:QUIT` in the engine log. The runner backs up and restores the engine log and
@@ -183,3 +184,15 @@ build replaces the normal Debug binaries. Rebuild the normal tree afterwards (de
 `bin/x86_64/Debug/*.so` and `xr_3da` first, otherwise make considers them up to date).
 `detect_odr_violation=0` is needed because ImGui is linked into both xrEngine and xrGame.
 13 ASan play runs with all fixes were clean.
+
+## Run 2026-10-11, dogs phase (Linux)
+
+    PASS dogs_found esc_dog_swarm_0001 (dog_weak), actor moved next to it
+    PASS dogs_observed 90 s next to the pack without crash
+    PASS dogs_quit clean shutdown
+
+Animation fallbacks used: `stand_idle_howl_0`, `stand_idle_shake_0`,
+`stand_idle_smelling_look_around_0`, `stand_idle_smelling_up_0`. Each of these stopped
+the game with `can't find cycle` before `d7b120fab`. The first attempt of this phase also
+hit `point.angular_velocity is zero` (missing velocity lines, fixed in `59380e01a`) and
+then hung after the fatal error on a worker thread (`2f6d89256`).

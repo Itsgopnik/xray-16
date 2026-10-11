@@ -58,6 +58,8 @@ The selected mode is always logged (`* Game mode: shoc`).
 | Inventory slots | No artefact slot, `slots_count` differs from scanned slots | Artefact slot 11 | Artefact key is ignored when the slot doesn't exist; mismatch warning logged once |
 | HUD animations | `anim_*` names | `anm_*` names | Legacy fallback; missing-animation warnings suppressed in SoC |
 | Monster animations | Some motion variants missing | Complete sets | Missing variants are removed from the set, logged once per visual |
+| Dog group state animations | 9 of 17 CoP motions missing in all dog visuals (smelling, digging, howling, growling, shaking, 2 sit idles) | Present | Per-index fallback to the closest existing motion (`CAI_Dog::resolve_current_animation`); before, a resting pack stopped the game with `can't find cycle` |
+| Monster velocities | No `Velocity_WalkSmelling`, `Velocity_WalkGrowl`, `Velocity_RunAttack` | Defined | Fall back to `Velocity_WalkFwdNormal`/`Velocity_RunFwdNormal`; zero velocities broke path building |
 | Upgrades | None | Since CS | Upgrade manager skipped in SoC |
 | `game_loaded` tutorial | Missing | Present | Load screen ends directly in SoC |
 | Tracer texture | `fx\fx_tracer` | `fx\fx_tracer_weapons` | SoC default changed (still overridable in `system.ltx`) |
