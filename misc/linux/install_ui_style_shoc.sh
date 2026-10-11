@@ -15,7 +15,7 @@
 #
 # Files installed:
 #   <target>/gamedata/config/ui/styles/ui_style_shoc/*.xml
-#   <target>/gamedata/config/text/eng/string_table_z_shoc_overlay.xml
+#   <target>/gamedata/config/text/<lang>/string_table_z_shoc_overlay.xml (every language in the source tree)
 
 set -euo pipefail
 
@@ -32,22 +32,23 @@ if [[ ! -d "${TARGET_GAME_DIR}" ]]; then
 fi
 
 SRC_STYLE="${SOURCE_ROOT}/configs/ui/styles_/ui_style_shoc"
-SRC_OVERLAY="${SOURCE_ROOT}/configs/text/eng/string_table_z_shoc_overlay.xml"
+SRC_TEXT="${SOURCE_ROOT}/configs/text"
 
 DEST_STYLE="${TARGET_GAME_DIR}/gamedata/config/ui/styles/ui_style_shoc"
-DEST_OVERLAY_DIR="${TARGET_GAME_DIR}/gamedata/config/text/eng"
+DEST_TEXT="${TARGET_GAME_DIR}/gamedata/config/text"
 
 if [[ ! -d "${SRC_STYLE}" ]]; then
     echo "error: source style dir not found: ${SRC_STYLE}" >&2
     exit 1
 fi
-if [[ ! -f "${SRC_OVERLAY}" ]]; then
-    echo "error: source overlay not found: ${SRC_OVERLAY}" >&2
+shopt -s nullglob
+overlays=("${SRC_TEXT}"/*/string_table_z_shoc_overlay.xml)
+if [[ ${#overlays[@]} -eq 0 ]]; then
+    echo "error: no string_table_z_shoc_overlay.xml found under ${SRC_TEXT}" >&2
     exit 1
 fi
 
 mkdir -p "${DEST_STYLE}"
-mkdir -p "${DEST_OVERLAY_DIR}"
 
 # Copy XMLs, skip backup.xml (working scratch file, not a deliverable).
 copied=0
@@ -60,8 +61,12 @@ for src in "${SRC_STYLE}"/*.xml; do
     copied=$((copied + 1))
 done
 
-cp -v "${SRC_OVERLAY}" "${DEST_OVERLAY_DIR}/"
-copied=$((copied + 1))
+for src in "${overlays[@]}"; do
+    lang="$(basename "$(dirname "${src}")")"
+    mkdir -p "${DEST_TEXT}/${lang}"
+    cp -v "${src}" "${DEST_TEXT}/${lang}/"
+    copied=$((copied + 1))
+done
 
 echo
 echo "installed ${copied} file(s) into ${TARGET_GAME_DIR}"

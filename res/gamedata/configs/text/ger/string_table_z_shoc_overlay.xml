@@ -1,4 +1,5 @@
-<?xml version='1.0' encoding="UTF-8"?>
+<?xml version='1.0' encoding="windows-1252"?>
+<!-- Stored as windows-1252 like the game's own tables: the engine passes the bytes to the fonts unchanged -->
 <!--
     Deutsches Pendant zu res/gamedata/configs/text/eng/string_table_z_shoc_overlay.xml
     Wird automatisch geladen, wenn die Systemsprache des Spiels 'ger' ist
@@ -16,7 +17,7 @@
         <text>Nachrichten</text>
     </string>
     <string id="pda_filter_talk">
-        <text>GesprÃ¤che</text>
+        <text>Gespräche</text>
     </string>
     <string id="pda_date_filter">
         <text>Datum:</text>
@@ -68,13 +69,13 @@
         <text>Reputation</text>
     </string>
     <string id="st_pda_stalker_kills">
-        <text>GetÃ¶tete Stalker</text>
+        <text>Getötete Stalker</text>
     </string>
     <string id="st_pda_monster_kills">
-        <text>GetÃ¶tete Mutanten</text>
+        <text>Getötete Mutanten</text>
     </string>
     <string id="st_pda_quest_complete">
-        <text>Abgeschlossene AuftrÃ¤ge</text>
+        <text>Abgeschlossene Aufträge</text>
     </string>
     <string id="st_pda_total">
         <text>Gesamt</text>
@@ -106,10 +107,10 @@
     </string>
 
     <string id="ui_pda_encyclopedia_title">
-        <text>EnzyklopÃ¤die</text>
+        <text>Enzyklopädie</text>
     </string>
     <string id="ui_pda_encyclopedia_empty">
-        <text>Noch keine EnzyklopÃ¤die-Artikel freigeschaltet.</text>
+        <text>Noch keine Enzyklopädie-Artikel freigeschaltet.</text>
     </string>
 
     <string id="st_detail_list_for_quests_count">
@@ -125,7 +126,7 @@
         <text>Ruf bei den Gruppierungen</text>
     </string>
     <string id="st_detail_list_for_total">
-        <text>Punkte-AufschlÃ¼sselung</text>
+        <text>Punkte-Aufschlüsselung</text>
     </string>
 
     <!-- SHoC PDA-Fenster -->
@@ -133,13 +134,13 @@
         <text>Top 20 Stalker</text>
     </string>
     <string id="st_ui_pda_top20_empty">
-        <text>Keine Daten verfÃ¼gbar.</text>
+        <text>Keine Daten verfügbar.</text>
     </string>
     <string id="st_ui_pda_tasks_title">
-        <text>Aktive AuftrÃ¤ge</text>
+        <text>Aktive Aufträge</text>
     </string>
     <string id="st_ui_pda_tasks_empty">
-        <text>Keine aktiven AuftrÃ¤ge.</text>
+        <text>Keine aktiven Aufträge.</text>
     </string>
     <string id="st_ui_pda_contacts_title">
         <text>Kontakte</text>
@@ -151,7 +152,7 @@
         <text>Tagebuch</text>
     </string>
     <string id="st_ui_pda_diary_empty">
-        <text>Noch keine EintrÃ¤ge.</text>
+        <text>Noch keine Einträge.</text>
     </string>
 
 </string_table>

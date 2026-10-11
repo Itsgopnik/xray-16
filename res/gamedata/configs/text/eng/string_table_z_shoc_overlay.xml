@@ -1,9 +1,10 @@
-<?xml version='1.0' encoding="UTF-8"?>
+<?xml version='1.0' encoding="windows-1252"?>
+<!-- Stored as windows-1252 like the game's own tables: the engine passes the bytes to the fonts unchanged -->
 <!--
     SHoC-mode overlay string table for OpenXRay's CoP UI code paths.
     Loaded by CStringTable::Init (StringTable.cpp:60) which scans
     text/<lang>/*.xml. SHoC archives don't contain these CoP-only keys,
-    so the engine showed them raw in the PDA. Last-write-wins per key â€”
+    so the engine showed them raw in the PDA. Last-write-wins per key —
     safe to coexist with SHoC's bundled string tables.
 -->
 <string_table>
@@ -15,7 +16,7 @@
         <text>Diary</text>
     </string>
 
-    <!-- PDA Ranking (UIRankingWnd.cpp:128-134) â€” same mechanism as logs. -->
+    <!-- PDA Ranking (UIRankingWnd.cpp:128-134) — same mechanism as logs. -->
     <string id="ui_ranking_center_caption">
         <text>Ranking</text>
     </string>
@@ -59,7 +60,7 @@
         <text>Money:</text>
     </string>
 
-    <!-- PDA Statistics window (actor_statistic.xml â€” SHoC-native keys).
+    <!-- PDA Statistics window (actor_statistic.xml — SHoC-native keys).
          These keys appear in SHoC's original actor_statistic.xml but are not
          defined in any string_table_*.xml shipped in the SHoC archives. -->
     <string id="st_pda_player_statistic">
