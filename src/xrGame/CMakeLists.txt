@@ -1076,6 +1076,7 @@ target_sources(xrGame PRIVATE
     script_game_object_trader.cpp
     script_game_object_use2.cpp
     script_game_object_use.cpp
+    script_shoc_compat.cpp
     script_hit.cpp
     script_hit.h
     script_hit_inline.h

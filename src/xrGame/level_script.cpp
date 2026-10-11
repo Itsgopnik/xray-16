@@ -677,6 +677,8 @@ void jump_to_level(const Fvector& m_position, u32 m_level_vertex_id, GameGraph::
 template<typename T>
 struct EnumCallbackType {};
 
+void script_register_level_shoc_compat(lua_State* luaState);
+
 void CLevel::script_register(lua_State* luaState)
 {
     using namespace luabind;
@@ -993,4 +995,6 @@ void CLevel::script_register(lua_State* luaState)
             jump_to_level(m_position, m_level_vertex_id, m_game_vertex_id, {});
         })
     ];
+
+    script_register_level_shoc_compat(luaState);
 }
