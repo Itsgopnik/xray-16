@@ -7,8 +7,15 @@ Design background: [shoc-compatibility.md](shoc-compatibility.md).
 
 ```sh
 misc/tests/smoke/run_smoke.sh --game <SoC install with fsgame.ltx> --bin <dir with xr_3da> \
-    [--out <dir>] [--timeout 400] [--phases "menu play load"] [-- <extra engine args>]
+    [--out <dir>] [--timeout 300] [--phases "menu play load"] [--headless] [--gdb] \
+    [-- <extra engine args>]
 ```
+
+Use `--headless` on a desktop machine: each phase then runs in an invisible
+`kwin_wayland --virtual` session (Xwayland, hardware OpenGL, private D-Bus), so the
+game neither shows a window nor steals focus, and stray input can't reach it.
+`--gdb` runs the engine under gdb and writes all thread backtraces of a crash to
+`<phase>.stdout.log`.
 
 Each phase is a separate engine process, driven by `misc/tests/smoke/smoke_driver.lua`
 through `-test_script` (Debug/Mixed builds only):
@@ -16,7 +23,7 @@ through `-test_script` (Debug/Mixed builds only):
 | Phase | Steps |
 |---|---|
 | `menu` | Boot to the main menu, quit from the menu |
-| `play` | `-start server(all/single/alife/new)`: new game, wait 20 s, kill the nearest living enemy without story id (`obj:kill(actor)`), save as `smoke_test`, `load smoke_test` in the same process, check the enemy is still dead, quit |
+| `play` | `-nogameintro -start server(all/single/alife/new)`: new game, wait 20 s, kill the nearest living enemy without story id (`obj:kill(actor)`), save as `smoke_test`, `load smoke_test` in the same process, check the enemy is still dead, quit |
 | `load` | `-start server(smoke_test/single/alife/load)`: cold load, check the enemy is still dead, quit |
 
 A phase fails on any driver `FAIL`, a non-zero exit code, a timeout, or a missing
@@ -27,8 +34,10 @@ A phase fails on any driver `FAIL`, a non-zero exit code, a timeout, or a missin
 Limitations:
 
 - The enemy is killed by script, not by shooting. Weapon handling is not covered.
-- The game window takes focus. Mouse or keyboard input that reaches it during the run
-  is processed by the game (that is how the two crashes below were found).
+- Without `--headless` the game window takes focus, and mouse or keyboard input that
+  reaches it is processed by the game (that is how the two crashes below were found).
+  It also skipped the opening cinematic in some runs, which is why the play phase now
+  always passes `-nogameintro`.
 - Clean shutdown from the main menu is tested; shutdown via the in-game menu is not.
 
 ## Run 2026-10-11 (Linux)
@@ -104,3 +113,40 @@ SoC has no artefact slot. `R_ASSERT`, so this crashed release builds too.
   The driver reads the actor binder from `system.ltx`, so it should work there
   unchanged; for CS pass `-- -cs`.
 - Windows: `run_smoke.sh` is Linux-only for now.
+
+## Run 2026-10-11, headless (Linux)
+
+Same machine and game data, `--headless`, engine with the script API shims
+(`shoc-392` up to `bc13cf39e`).
+
+    PASS main_menu, menu_quit                       (5 s)
+    PASS new_game, kill_enemy, save, load_inprocess,
+         enemy_dead_after_inprocess_load, play_quit (45 s)
+    PASS load_cold, enemy_dead_after_cold_load,
+         load_quit                                  (18 s)
+
+### Issues found while building the headless mode
+
+**`-nogameintro` disabled the whole game module** (fixed in `15cfb11fc`):
+`entry_point.cpp` checked `strstr(commandLine, "-nogame")`, which also matches
+`-nogameintro`. The engine then started without `xrGame` (`! Unknown command: bind`,
+no scripts) and `-start` did nothing.
+
+**Error dialogs block unattended runs** (fixed in `438a0ee5e`): on Linux a fatal error
+or SIGTERM opened an SDL message box and waited forever. When `timeout` killed the
+parent, the engine stayed behind; seven such orphans had accumulated. `-silent_error_mode`
+now works outside Windows too, and the runner kills leftover engines after each phase.
+
+**Level start pauses without input focus:** for single player, the engine pauses the
+level at start ("application start") if the window has no input focus and
+`rs_always_active` is off. Headless runs set `rs_always_active on` for the duration
+of the run.
+
+### Open
+
+- Intermittent segfault in `CPHSimpleCharacter::UpdateDynamicDamage` right after the
+  scripted kill (once in 7 visible play runs, not reproduced since; 3 runs under gdb
+  were clean). Suspected: contact with the physics body of a dead NPC's item that was
+  destroyed in the same frame.
+- If the save is missing, the cold load segfaults in `CALifeSpawnRegistry::load` after
+  "Cannot find the specified saved game" instead of failing cleanly.
