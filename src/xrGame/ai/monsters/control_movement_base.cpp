@@ -19,16 +19,18 @@ void CControlMovementBase::reinit()
 
 void CControlMovementBase::load(LPCSTR section)
 {
+    // Lines added after SoC (WalkSmelling, WalkGrowl, RunAttack) are missing in old configs;
+    // a zero velocity makes path building fail, so use the closest basic velocity instead.
     load_velocity(section, "Velocity_Stand", eVelocityParameterStand);
     load_velocity(section, "Velocity_WalkFwdNormal", eVelocityParameterWalkNormal);
-    load_velocity(section, "Velocity_WalkSmelling", eVelocityParameterWalkSmelling);
-    load_velocity(section, "Velocity_WalkGrowl", eVelocityParameterWalkGrowl);
+    load_velocity(section, "Velocity_WalkSmelling", eVelocityParameterWalkSmelling, "Velocity_WalkFwdNormal");
+    load_velocity(section, "Velocity_WalkGrowl", eVelocityParameterWalkGrowl, "Velocity_WalkFwdNormal");
     load_velocity(section, "Velocity_RunFwdNormal", eVelocityParameterRunNormal);
     load_velocity(section, "Velocity_WalkFwdDamaged", eVelocityParameterWalkDamaged);
     load_velocity(section, "Velocity_RunFwdDamaged", eVelocityParameterRunDamaged);
-    load_velocity(section, "Velocity_Steal", eVelocityParameterSteal);
-    load_velocity(section, "Velocity_Drag", eVelocityParameterDrag);
-    load_velocity(section, "Velocity_RunAttack", eVelocityParameterRunAttack);
+    load_velocity(section, "Velocity_Steal", eVelocityParameterSteal, "Velocity_WalkFwdNormal");
+    load_velocity(section, "Velocity_Drag", eVelocityParameterDrag, "Velocity_WalkFwdNormal");
+    load_velocity(section, "Velocity_RunAttack", eVelocityParameterRunAttack, "Velocity_RunFwdNormal");
 
     // add idle velocity
     SVelocityParam velocity_param;
@@ -38,11 +40,20 @@ void CControlMovementBase::load(LPCSTR section)
                                     velocity_param.velocity.angular_path, velocity_param.velocity.angular_real));
 }
 
-void CControlMovementBase::load_velocity(LPCSTR section, LPCSTR line, u32 velocity_id)
+void CControlMovementBase::load_velocity(LPCSTR section, LPCSTR line, u32 velocity_id, LPCSTR fallback_line)
 {
     SVelocityParam velocity_param;
     if (pSettings->line_exist(section, line))
         velocity_param.Load(section, line);
+    else if (fallback_line && pSettings->line_exist(section, fallback_line))
+    {
+        velocity_param.Load(section, fallback_line);
+#ifndef MASTER_GOLD
+        static xr_set<xr_string> reported;
+        if (reported.emplace(xr_string(section) + "/" + line).second)
+            Msg("~ [%s] has no %s, using %s", section, line, fallback_line);
+#endif
+    }
     m_velocities.insert(std::make_pair(velocity_id, velocity_param));
 
     m_man->path_builder().detail().add_velocity(

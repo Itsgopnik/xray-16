@@ -19,7 +19,7 @@ public:
     virtual void reinit();
     virtual void update_frame();
 
-    void load_velocity(LPCSTR section, LPCSTR line, u32 param);
+    void load_velocity(LPCSTR section, LPCSTR line, u32 param, LPCSTR fallback_line = nullptr);
     SVelocityParam& get_velocity(u32 velocity_id);
 
     void stop();
