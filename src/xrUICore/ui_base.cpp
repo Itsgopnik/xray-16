@@ -560,6 +560,65 @@ void UICore::ReadTextureInfo()
             if (CUITextureMaster::FindItem("ui_listline_back", info))
                 CUITextureMaster::RegisterTexture("ui_date_back_tile", info.file, info.rect);
         }
+
+        // PDA scroll bars: SoC's scroll_bar.xml names single regions (ui_scroll_PDA_back,
+        // ui_scroll_PDA_box_e, ...), the engine draws them as frame lines (<id>_b, _back, _e)
+        // and their buttons with state suffixes. Split each region into cap/middle/cap.
+        {
+            struct { pcstr id; bool horizontal; } const frame_lines[] =
+            {
+                { "ui_scroll_PDA_back",     false },
+                { "ui_scroll_PDA_box_e",    false },
+                { "ui_scroll_PDA_back_hor", true  },
+                { "ui_scroll_PDA_box_hor_e", true },
+            };
+            constexpr float cap = 4.0f;
+            for (const auto& fl : frame_lines)
+            {
+                TEX_INFO info;
+                if (!CUITextureMaster::FindItem(fl.id, info))
+                    continue;
+                const Frect& r = info.rect;
+                Frect b = r, back = r, e = r;
+                if (fl.horizontal)
+                {
+                    b.x2 = r.x1 + cap;
+                    back.x1 = r.x1 + cap;
+                    back.x2 = r.x2 - cap;
+                    e.x1 = r.x2 - cap;
+                }
+                else
+                {
+                    b.y2 = r.y1 + cap;
+                    back.y1 = r.y1 + cap;
+                    back.y2 = r.y2 - cap;
+                    e.y1 = r.y2 - cap;
+                }
+                string128 name;
+                CUITextureMaster::RegisterTexture(strconcat(name, fl.id, "_b"), info.file, b);
+                CUITextureMaster::RegisterTexture(strconcat(name, fl.id, "_back"), info.file, back);
+                CUITextureMaster::RegisterTexture(strconcat(name, fl.id, "_e"), info.file, e);
+            }
+
+            // Button states of the box and the horizontal back
+            struct { pcstr target; pcstr source; } const states[] =
+            {
+                { "ui_scroll_PDA_box_e_e", "ui_scroll_PDA_box_e" },
+                { "ui_scroll_PDA_box_e_d", "ui_scroll_PDA_box_e" },
+                { "ui_scroll_PDA_box_e_t", "ui_scroll_PDA_box_t" },
+                { "ui_scroll_PDA_box_e_h", "ui_scroll_PDA_box_h" },
+                { "ui_scroll_PDA_back_hor_e", "ui_scroll_PDA_back_hor" },
+                { "ui_scroll_PDA_back_hor_d", "ui_scroll_PDA_back_hor" },
+                { "ui_scroll_PDA_back_hor_t", "ui_scroll_PDA_back_hor" },
+                { "ui_scroll_PDA_back_hor_h", "ui_scroll_PDA_back_hor" },
+            };
+            for (const auto& s : states)
+            {
+                TEX_INFO info;
+                if (CUITextureMaster::FindItem(s.source, info))
+                    CUITextureMaster::RegisterTexture(s.target, info.file, info.rect);
+            }
+        }
     }
 }
 
