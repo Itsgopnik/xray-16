@@ -344,6 +344,14 @@ void CUIPdaWnd::SetActiveSubdialog(const shared_str& section)
     //if (m_sActiveSection == section)
     //    return;
 
+    // Called directly (scripts, links to the map or tasks): keep the tab bar in sync.
+    // SetActiveTab() reports back through TAB_CHANGED, which calls this again with the tab active.
+    if (UITabControl && UITabControl->GetActiveId() != section && UITabControl->GetButtonById(section))
+    {
+        UITabControl->SetActiveTab(section);
+        return;
+    }
+
     if (m_pActiveDialog)
     {
         if (UIMainPdaFrame->IsChild(m_pActiveDialog))
