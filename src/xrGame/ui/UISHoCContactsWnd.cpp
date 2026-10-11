@@ -2,211 +2,180 @@
 #include "UISHoCContactsWnd.h"
 
 #include "UIXmlInit.h"
-#include "UIInventoryUtilities.h"
+#include "UICharacterInfo.h"
 #include "xrUICore/Static/UIStatic.h"
-#include "xrUICore/ListBox/UIListBox.h"
-#include "xrUICore/ListBox/UIListBoxItem.h"
-#include "alife_simulator.h"
-#include "alife_object_registry.h"
-#include "ai_space.h"
-#include "xrAICore/Navigation/game_graph.h"
-#include "character_community.h"
-#include "relation_registry.h"
+#include "xrUICore/Static/UIAnimatedStatic.h"
+#include "xrUICore/Windows/UIFrameWindow.h"
+#include "xrUICore/Windows/UIFrameLineWnd.h"
+#include "xrUICore/ScrollView/UIScrollView.h"
 #include "Actor.h"
-#include "xrServerEntities/xrServer_Objects_ALife_Monsters.h"
+#include "PDA.h"
+#include "character_info.h"
+#include "xrEngine/StringTable/StringTable.h"
 
 #define SHOC_CONTACTS_XML "pda_contacts_new.xml"
+#define SHOC_CONTACT_CHARACTER_XML "pda_character.xml"
 
 namespace
 {
-    constexpr u32 kColorTitle = color_argb(255, 231, 168, 12);
-    constexpr u32 kColorRow = color_argb(255, 225, 225, 250);
-    constexpr u32 kColorMuted = color_argb(255, 181, 170, 148);
+constexpr float kContactHeight = 85.0f;
 
-    constexpr float kColNameW = 190.0f;
-    constexpr float kColFactionW = 120.0f;
+// The original layouts repeat a node (e.g. left_auto_static) once per static
+void init_auto_statics(CUIXml& xml, pcstr node, CUIWindow* parent)
+{
+    const int count = xml.GetNodesNum(xml.GetRoot(), node);
+    for (int i = 0; i < count; ++i)
+    {
+        CUIStatic* st = xr_new<CUIStatic>(node);
+        st->SetAutoDelete(true);
+        CUIXmlInit::InitStatic(xml, node, i, st);
+        parent->AttachChild(st);
+    }
 }
+} // namespace
+
+CSE_ALifeTraderAbstract* ch_info_get_from_id(u16 id);
 
 CUISHoCContactsWnd::CUISHoCContactsWnd() : CUIWindow("CUISHoCContactsWnd") {}
 CUISHoCContactsWnd::~CUISHoCContactsWnd() = default;
 
 bool CUISHoCContactsWnd::Init()
 {
-    SetWndPos({ 110.0f, 90.0f });
-    SetWndSize({ 761.0f, 475.0f });
+    CUIXml xml;
+    if (!xml.Load(CONFIG_PATH, UI_PATH, UI_PATH_DEFAULT, SHOC_CONTACTS_XML, false))
+        return false;
 
-    CUIXml uiXml;
-    uiXml.Load(CONFIG_PATH, UI_PATH, UI_PATH_DEFAULT, SHOC_CONTACTS_XML, false);
+    CUIXmlInit::InitWindow(xml, "main_wnd", 0, this);
 
-    m_title = xr_new<CUIStatic>("ContactsTitle");
-    m_title->SetAutoDelete(true);
-    AttachChild(m_title);
-    m_title->SetWndPos({ 21.0f, 56.0f });
-    m_title->SetWndSize({ 340.0f, 22.0f });
-    m_title->TextItemControl()->SetTextColor(kColorTitle);
-    m_title->TextItemControl()->SetTextST("st_ui_pda_contacts_title");
+    m_left_frame = xr_new<CUIFrameWindow>("left_frame_window");
+    m_left_frame->SetAutoDelete(true);
+    AttachChild(m_left_frame);
+    CUIXmlInit::InitFrameWindow(xml, "left_frame_window", 0, m_left_frame);
 
-    m_list = xr_new<CUIListBox>();
-    m_list->SetAutoDelete(true);
-    AttachChild(m_list);
-    m_list->SetWndPos({ 21.0f, 82.0f });
-    m_list->SetWndSize({ 320.0f, 381.0f });
-    m_list->SetItemHeight(16.0f);
-    m_list->SetTextColor(kColorRow);
-    m_list->SetMessageTarget(this);
+    m_left_header = xr_new<CUIFrameLineWnd>("left_frame_line");
+    m_left_header->SetAutoDelete(true);
+    m_left_frame->AttachChild(m_left_header);
+    CUIXmlInit::InitFrameLine(xml, "left_frame_line", 0, m_left_header);
 
-    Register(m_list);
-    AddCallback(m_list, LIST_ITEM_CLICKED,
-        CUIWndCallback::void_function(this, &CUISHoCContactsWnd::OnContactSelected));
-    AddCallback(m_list, LIST_ITEM_SELECT,
-        CUIWndCallback::void_function(this, &CUISHoCContactsWnd::OnContactSelected));
+    m_right_frame = xr_new<CUIFrameWindow>("right_frame_window");
+    m_right_frame->SetAutoDelete(true);
+    AttachChild(m_right_frame);
+    CUIXmlInit::InitFrameWindow(xml, "right_frame_window", 0, m_right_frame);
 
-    // Right pane: selected contact detail
-    auto make_detail = [&](pcstr name, float y, u32 color) -> CUIStatic*
+    m_right_header = xr_new<CUIFrameLineWnd>("right_frame_line");
+    m_right_header->SetAutoDelete(true);
+    m_right_frame->AttachChild(m_right_header);
+    CUIXmlInit::InitFrameLine(xml, "right_frame_line", 0, m_right_header);
+
+    if (xml.NavigateToNode("a_static", 0))
     {
-        CUIStatic* s = xr_new<CUIStatic>(name);
-        s->SetAutoDelete(true);
-        AttachChild(s);
-        s->SetWndPos({ 360.0f, y });
-        s->SetWndSize({ 380.0f, 22.0f });
-        s->TextItemControl()->SetTextColor(color);
-        s->TextItemControl()->SetText("");
-        return s;
-    };
-    m_detail_name = make_detail("ContactName", 82.0f, kColorTitle);
-    m_detail_faction = make_detail("ContactFaction", 112.0f, kColorRow);
-    m_detail_rank = make_detail("ContactRank", 138.0f, kColorRow);
-    m_detail_attitude = make_detail("ContactAttitude", 164.0f, kColorRow);
+        m_animation = xr_new<CUIAnimatedStatic>();
+        m_animation->SetAutoDelete(true);
+        m_left_header->AttachChild(m_animation);
+        CUIXmlInit::InitAnimatedStatic(xml, "a_static", 0, m_animation);
+    }
 
-    m_empty_label = xr_new<CUIStatic>("ContactsEmpty");
-    m_empty_label->SetAutoDelete(true);
-    AttachChild(m_empty_label);
-    m_empty_label->SetWndPos({ 21.0f, 200.0f });
-    m_empty_label->SetWndSize({ 320.0f, 22.0f });
-    m_empty_label->TextItemControl()->SetTextColor(kColorMuted);
-    m_empty_label->TextItemControl()->SetTextST("st_ui_pda_contacts_empty");
-    m_empty_label->Show(false);
+    m_list = xr_new<CUIScrollView>();
+    m_list->SetAutoDelete(true);
+    m_left_frame->AttachChild(m_list);
+    CUIXmlInit::InitScrollView(xml, "list", 0, m_list);
 
+    m_details = xr_new<CUIScrollView>();
+    m_details->SetAutoDelete(true);
+    m_right_frame->AttachChild(m_details);
+    CUIXmlInit::InitScrollView(xml, "detail_list", 0, m_details);
+
+    init_auto_statics(xml, "left_auto_static", m_left_frame);
+    init_auto_statics(xml, "right_auto_static", m_right_frame);
     return true;
 }
 
 void CUISHoCContactsWnd::Show(bool status)
 {
+    inherited::Show(status);
     if (status)
         FillList();
-    inherited::Show(status);
 }
 
 void CUISHoCContactsWnd::FillList()
 {
-    if (!m_list)
-        return;
-
     m_list->Clear();
-    m_detail_name->TextItemControl()->SetText("");
-    m_detail_faction->TextItemControl()->SetText("");
-    m_detail_rank->TextItemControl()->SetText("");
-    m_detail_attitude->TextItemControl()->SetText("");
+    m_details->Clear();
 
-    if (!ai().get_alife())
-    {
-        m_empty_label->Show(true);
+    CActor* actor = Actor();
+    CPda* pda = actor ? actor->GetPDA() : nullptr;
+    if (!pda)
         return;
-    }
 
-    struct Entry
+    xr_vector<CPda*> contacts;
+    pda->ActivePDAContacts(contacts);
+    for (CPda* contact : contacts)
     {
-        u16 id;
-        CHARACTER_RANK_VALUE rank;
-        xr_string name;
-    };
-    xr_vector<Entry> entries;
-    entries.reserve(128);
-
-    const auto& objects = ai().alife().objects().objects();
-    for (auto it = objects.begin(); it != objects.end(); ++it)
-    {
-        CSE_ALifeHumanStalker* stalker = smart_cast<CSE_ALifeHumanStalker*>(it->second);
-        if (!stalker)
+        CInventoryOwner* owner = contact->GetOriginalOwner();
+        if (!owner)
             continue;
-        if (!stalker->g_Alive())
-            continue;
-        // Skip the actor itself and unnamed generic spawns.
-        if (stalker->CSE_ALifeTraderAbstract::m_character_name.empty())
-            continue;
-
-        Entry e;
-        e.id = stalker->ID;
-        e.rank = stalker->CSE_ALifeTraderAbstract::Rank();
-        e.name = stalker->CSE_ALifeTraderAbstract::m_character_name;
-        entries.push_back(e);
+        auto* item = xr_new<CUISHoCContactItem>(this);
+        item->Init(m_list->GetDesiredChildWidth(), kContactHeight, owner->object_id());
+        m_list->AddWindow(item, true);
     }
-
-    std::sort(entries.begin(), entries.end(),
-        [](const Entry& a, const Entry& b) { return a.rank > b.rank; });
-
-    const size_t count = entries.size() < 50 ? entries.size() : 50;
-    if (count == 0)
-    {
-        m_empty_label->Show(true);
-        return;
-    }
-    m_empty_label->Show(false);
-
-    for (size_t i = 0; i < count; ++i)
-    {
-        CUIListBoxItem* item = m_list->AddItem();
-        item->SetTextColor(kColorRow);
-        item->GetTextItem()->SetWidth(0.0f);
-        item->SetTAG(entries[i].id);
-        item->AddTextField(entries[i].name.c_str(), kColNameW);
-
-        LPCSTR rank_key = InventoryUtilities::GetRankAsText(entries[i].rank);
-        shared_str rank_translated = StringTable().translate(rank_key);
-        item->AddTextField(rank_translated.c_str(), kColFactionW);
-    }
-
-    m_list->SetSelectedIDX(0);
-    ShowSelectedDetail();
 }
 
-void CUISHoCContactsWnd::OnContactSelected(CUIWindow*, void*)
+void CUISHoCContactsWnd::ShowDetails(u16 owner_id)
 {
-    ShowSelectedDetail();
+    m_details->Clear();
+
+    CSE_ALifeTraderAbstract* trader = ch_info_get_from_id(owner_id);
+    if (!trader)
+        return;
+    CCharacterInfo info;
+    info.Init(trader);
+    if (info.Bio().empty())
+        return;
+
+    CUIStatic* bio = xr_new<CUIStatic>("ContactBio");
+    bio->SetTextComplexMode(true);
+    bio->SetWidth(m_details->GetDesiredChildWidth());
+    bio->TextItemControl()->SetText(StringTable().translate(info.Bio()).c_str());
+    bio->AdjustHeightToText();
+    m_details->AddWindow(bio, true);
 }
 
-void CUISHoCContactsWnd::ShowSelectedDetail()
+CUISHoCContactItem::CUISHoCContactItem(CUISHoCContactsWnd* owner)
+    : CUIWindow("CUISHoCContactItem"), m_owner(owner) {}
+
+void CUISHoCContactItem::Init(float width, float height, u16 character_id)
 {
-    CUIListBoxItem* sel = m_list ? m_list->GetSelectedItem() : nullptr;
-    if (!sel || !ai().get_alife())
-        return;
+    SetWndSize({ width, height });
 
-    const u16 id = static_cast<u16>(sel->GetTAG());
-    CSE_ALifeHumanStalker* stalker =
-        smart_cast<CSE_ALifeHumanStalker*>(ai().alife().objects().object(id, true));
-    if (!stalker)
-        return;
+    CUIXml xml;
+    xml.Load(CONFIG_PATH, UI_PATH, UI_PATH_DEFAULT, SHOC_CONTACT_CHARACTER_XML);
 
-    m_detail_name->TextItemControl()->SetText(
-        stalker->CSE_ALifeTraderAbstract::m_character_name.c_str());
+    m_info = xr_new<CUICharacterInfo>();
+    m_info->SetAutoDelete(true);
+    AttachChild(m_info);
+    m_info->InitCharacterInfo(Fvector2().set(0, 0), Fvector2().set(width, height), &xml);
+    m_info->InitCharacter(character_id);
 
-    shared_str community = CHARACTER_COMMUNITY::IndexToId(
-        stalker->CSE_ALifeTraderAbstract::m_community_index);
-    m_detail_faction->TextItemControl()->SetText(
-        StringTable().translate(community).c_str());
+    CUIXmlInit::InitAutoStaticGroup(xml, "pda_char_auto_statics", 0, this);
+}
 
-    LPCSTR rank_key = InventoryUtilities::GetRankAsText(stalker->CSE_ALifeTraderAbstract::Rank());
-    m_detail_rank->TextItemControl()->SetText(StringTable().translate(rank_key).c_str());
+void CUISHoCContactItem::SetSelected(bool b)
+{
+    CUISelectable::SetSelected(b);
+    if (b)
+        m_owner->ShowDetails(m_info->OwnerID());
+}
 
-    // Faction goodwill toward the actor.
-    if (Actor())
+bool CUISHoCContactItem::OnMouseDown(int mouse_btn)
+{
+    if (mouse_btn == MOUSE_1)
     {
-        CHARACTER_GOODWILL gw = RELATION_REGISTRY().GetCommunityGoodwill(
-            stalker->CSE_ALifeTraderAbstract::m_community_index, Actor()->ID());
-        LPCSTR att_key = InventoryUtilities::GetGoodwillAsText(gw);
-        m_detail_attitude->TextItemControl()->SetTextColor(
-            InventoryUtilities::GetGoodwillColor(gw));
-        m_detail_attitude->TextItemControl()->SetText(
-            StringTable().translate(att_key).c_str());
+        // Items live on the scroll view's pad: parent is the pad, its parent the view
+        if (CUIScrollView* list = smart_cast<CUIScrollView*>(GetParent() ? GetParent()->GetParent() : nullptr))
+            list->SetSelected(this);
+        if (!GetSelected())
+            SetSelected(true);
+        return true;
     }
+    return inherited::OnMouseDown(mouse_btn);
 }
