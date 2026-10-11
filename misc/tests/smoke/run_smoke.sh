@@ -103,6 +103,10 @@ run_phase() {
             printf 'cd %q || exit 1\n' "$GAME"
             printf 'export LD_LIBRARY_PATH=%q XRAY_SMOKE_DIR=%q XRAY_SMOKE_PHASE=%q\n' \
                 "$BIN${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$OUT" "$phase"
+            # sanitizer builds: keep their options inside the nested session
+            for var in ASAN_OPTIONS UBSAN_OPTIONS LSAN_OPTIONS; do
+                [ -n "${!var:-}" ] && printf 'export %s=%q\n' "$var" "${!var}"
+            done
             printf '%q ' "${cmd[@]}"
             echo
         } > "$session"
