@@ -248,7 +248,9 @@ bool CUIActorMenu::OnItemDbClick(CUICellItem* itm)
             break;
         }
         PIItem iitem_to_place = static_cast<PIItem>(itm->m_pData);
-        if (!m_pActorInvOwner->inventory().SlotIsPersistent(iitem_to_place->BaseSlot())
+        // Slotless items (ammo, SoC belt artefacts) have no slot to compare against
+        if (iitem_to_place->BaseSlot() != NO_ACTIVE_SLOT
+            && !m_pActorInvOwner->inventory().SlotIsPersistent(iitem_to_place->BaseSlot())
             && m_pActorInvOwner->inventory().ItemFromSlot(iitem_to_place->BaseSlot()) == iitem_to_place)
         {
             ToBag(itm, false);
