@@ -68,6 +68,28 @@ The selected mode is always logged (`* Game mode: shoc`).
 | PDA | Tasks/diary/contacts/ranking tabs | Different PDA | Separate `CUISHoC*Wnd` windows in SoC mode |
 | Scripts | Non-normalized direction vectors, duplicate `give_task` ids, no task type | Strict | Normalize/warn instead of assert; default task type storyline |
 
+### Script API
+
+Method: the SoC 1.0006 scripts and configs were dumped through the engine
+(`misc/tests/tools/dump_scripts.lua`) and compared with the engine's `-dump_bindings`
+output (`misc/tests/tools/find_missing_exports.py`). The 50 candidates were then checked
+for liveness: is the module a registered logic scheme (`load_scheme`) or referenced from
+a config or a live script?
+
+| Name | Used by | Live? | Handling |
+|---|---|---|---|
+| `game_object:nearest_accessible_position()` | `xr_attendant` (follower scheme; Sarcofag, Selo, Dark Valley escort, Cit jail) | Yes | Shim (SoC only) |
+| `level.actor()` | `xr_rest` (`rest` scheme), `_g.get_actor_id` | Unknown: depends on gulag type `rest` in the spawn data | Shim (SoC only), call sites logged |
+| `cse_anomalous_zone.update`, `cse_zone_visual.update` | `se_zones` artefact respawn in anomalies | Yes, but never called | Not shimmed: zones aren't scheduled server objects in this engine, so `se_zone_anom:update()` never runs and artefacts don't respawn. Needs an ALife change, see open points |
+| `actor_stats.add_to_ranking`, `remove_from_ranking` | `bind_stalker`, `se_stalker`, `xr_motivator` | Guarded with `~= nil` | Not needed: `CUISHoCRankingWnd` builds the list from the ALife registry |
+| `CHelicopter.eIdleState` etc., `CHelicopter:SetState` | `xr_heli` via `escape_heli` | No (`escape_heli` is never loaded; the live helicopter uses `heli_move`) | None |
+| `level.object()` | `_g.debug_get_level_object`, `script_object`, unregistered schemes | No | None |
+| `actor_sleep`, `clear_callback`, `get_fsm_state`, `send_pda_message`, `set_node_evaluator`, `set_path_evaluator` | `xr_effects.force_actor_sleep`, unregistered schemes | No | None |
+| Others (`game_last*`, `lua_help`, `test_*`, MP UI classes) | Test, debug and multiplayer scripts | No | None |
+
+Shims live in `src/xrGame/script_shoc_compat.cpp`, are registered only in SoC mode, and
+log every distinct call site once: `~ [shoc-shim] level.actor called from ...:line`.
+
 ### Saves
 
 Saves written by OpenXRay in SoC mode load correctly (in-process and cold, see the
@@ -83,7 +105,9 @@ Results are recorded in [shoc-smoke-test-log.md](shoc-smoke-test-log.md).
 
 ## Open points
 
-- Script API gaps (issue #392: "Return deleted script export") have no shim logging yet.
+- Artefacts don't respawn in anomaly fields (zones aren't scheduled, see Script API).
+- Static analysis can't see calls built at runtime (`loadstring`, string-assembled
+  names) or uses from spawn data; runtime shim logs cover only the shimmed functions.
 - The R4 renderer doesn't start with SoC data (#487).
 - No CS, CoP or CoC regression run has been done with the smoke test yet.
 - Windows has not been tested.
