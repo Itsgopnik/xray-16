@@ -10,6 +10,19 @@ extern ENGINE_API bool CallOfPripyatMode;
 extern ENGINE_API bool ClearSkyMode;
 extern ENGINE_API bool ShadowOfChernobylMode;
 
+// Read-only view of the mode flags above, for code that needs to switch on the game.
+// Unlocked means CoP without restrictions (also used by CoP-based mods like CoC).
+enum class EGameType
+{
+    Unlocked,
+    ShadowOfChernobyl,
+    ClearSky,
+    CallOfPripyat,
+};
+
+ENGINE_API EGameType GetGameType();
+ENGINE_API pcstr GetGameTypeName(EGameType type);
+
 // textures
 ENGINE_API extern int psTextureLOD;
 

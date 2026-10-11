@@ -443,6 +443,7 @@ void CLocatorAPI::LoadArchive(archive& A, pcstr entrypoint)
         {
             Msg("Assuming that [%s] is encrypted ShoC archive", A.path.c_str());
             shouldDecrypt = true;
+            m_has_encrypted_archives = true;
         }
         FS_Path* root = nullptr;
         if (get_path("$fs_root$", &root))

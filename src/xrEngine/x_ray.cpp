@@ -113,6 +113,42 @@ void set_free_mode()
     ClearSkyMode = false;
 }
 
+EGameType GetGameType()
+{
+    if (ShadowOfChernobylMode)
+        return EGameType::ShadowOfChernobyl;
+    if (ClearSkyMode)
+        return EGameType::ClearSky;
+    if (CallOfPripyatMode)
+        return EGameType::CallOfPripyat;
+    return EGameType::Unlocked;
+}
+
+pcstr GetGameTypeName(EGameType type)
+{
+    switch (type)
+    {
+    case EGameType::ShadowOfChernobyl: return "shoc";
+    case EGameType::ClearSky:          return "cs";
+    case EGameType::CallOfPripyat:     return "cop";
+    case EGameType::Unlocked:          return "unlock";
+    }
+    return "unknown";
+}
+
+// Only SoC archives are detected reliably: they are the only encrypted ones.
+// CS/CoP/CoC data can't be told apart from the file system, so they default to CoP.
+void set_auto_mode()
+{
+    if (FS.has_encrypted_archives())
+    {
+        Log("* Game mode: encrypted SoC archives found, using shoc");
+        set_shoc_mode();
+    }
+    else
+        set_cop_mode();
+}
+
 void InitSettings()
 {
     ZoneScoped;
@@ -138,8 +174,10 @@ void InitSettings()
         set_free_mode();
     else
     {
-        pcstr gameMode = READ_IF_EXISTS(pSettingsOpenXRay, r_string, "compatibility", "game_mode", "cop");
-        if (xr_strcmpi("cop", gameMode) == 0)
+        pcstr gameMode = READ_IF_EXISTS(pSettingsOpenXRay, r_string, "compatibility", "game_mode", "auto");
+        if (xr_strcmpi("auto", gameMode) == 0)
+            set_auto_mode();
+        else if (xr_strcmpi("cop", gameMode) == 0)
             set_cop_mode();
         else if (xr_strcmpi("cs", gameMode) == 0)
             set_cs_mode();
@@ -147,7 +185,10 @@ void InitSettings()
             set_shoc_mode();
         else if (xr_strcmpi("unlock", gameMode) == 0)
             set_free_mode();
+        else
+            Msg("! Unknown [compatibility] game_mode '%s' in openxray.ltx, game mode flags stay unset", gameMode);
     }
+    Msg("* Game mode: %s", GetGameTypeName(GetGameType()));
 }
 
 void InitConsole()

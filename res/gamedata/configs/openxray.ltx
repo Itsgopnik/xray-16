@@ -29,9 +29,10 @@ allow_escape_sequences = false
 
 [compatibility]
 ; Compatibility with previous games
-; cop, cs, shoc or soc and unlock
+; auto, cop, cs, shoc or soc and unlock
+; auto selects shoc when encrypted SoC archives are mounted, cop otherwise
 ; unlock is cop with disabled restrictions
-game_mode = cop
+game_mode = auto
 
 ; Always try to put item in the slot, SOC behaviour
 ; For the comparison, COP tries to do that only if item has default_to_ruck = false

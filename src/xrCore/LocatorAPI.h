@@ -158,6 +158,7 @@ private:
 
     files_set m_files;
     bool bNoRecurse{ true };
+    bool m_has_encrypted_archives{}; // SoC-style archives without ini header
 
     Lock* m_auth_lock;
     u64 m_auth_code{};
@@ -259,6 +260,8 @@ public:
     void file_list_close(xr_vector<pstr>*& lst);
 
     bool path_exist(pcstr path);
+    // True if at least one mounted archive is an encrypted SoC archive
+    bool has_encrypted_archives() const { return m_has_encrypted_archives; }
     FS_Path* get_path(pcstr path);
     bool get_path(pcstr path, FS_Path** outPath);
     FS_Path* append_path(pcstr path_alias, pcstr root, pcstr add, bool recursive);
