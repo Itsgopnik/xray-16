@@ -25,6 +25,7 @@ through `-test_script` (Debug/Mixed builds only):
 | `menu` | Boot to the main menu, quit from the menu |
 | `play` | `-nogameintro -start server(all/single/alife/new)`: new game, wait 20 s, kill the nearest living enemy without story id (`obj:kill(actor)`), save as `smoke_test`, `load smoke_test` in the same process, check the enemy is still dead, quit |
 | `load` | `-start server(smoke_test/single/alife/load)`: cold load, check the enemy is still dead, quit |
+| `pda` (optional) | New game, open the PDA map and tasks tabs via `ActorMenu.get_pda_menu()`, take a screenshot of each (moved to `<out>/screenshots`) |
 | `dogs` (optional) | New game, `ai_ignore_actor 1`, `g_god 1`, actor moved next to the nearest dog pack for 90 s so the group states (rest, idle animations) run, quit. The report counts dog animation fallbacks |
 
 A phase fails on any driver `FAIL`, a non-zero exit code, a timeout, or a missing
@@ -196,3 +197,15 @@ Animation fallbacks used: `stand_idle_howl_0`, `stand_idle_shake_0`,
 the game with `can't find cycle` before `d7b120fab`. The first attempt of this phase also
 hit `point.angular_velocity is zero` (missing velocity lines, fixed in `59380e01a`) and
 then hung after the fatal error on a worker thread (`2f6d89256`).
+
+## Run 2026-10-11, pda phase (Linux)
+
+    PASS pda_tab_eptMap active section: eptMap
+    PASS pda_tab_eptTasks active section: eptTasks
+    PASS pda_quit clean shutdown
+
+The map tab works (Cordon level map, actor and task spots, zoom and filter buttons); the
+older note that `pUIMapWnd` stays null is outdated. The screenshots showed two flaws,
+both fixed: the tab bar kept the previous tab highlighted when a section was opened
+directly (`e8c40c009`), and the UTF-8 string table overlays showed "AuftrÃ¤ge"
+(`ff5c04dcf`). The plain `screenshot` console command did nothing before `1ef3b97b9`.

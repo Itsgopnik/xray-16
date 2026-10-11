@@ -68,6 +68,7 @@ The selected mode is always logged (`* Game mode: shoc`).
 | Level maps | `game_maps.ltx` `[def_map]`, schematic rects | Per-level `[level_map]` | CoP consistency checks skipped in SoC |
 | UI textures | Per-part DDS files, old XML layouts | Atlas ids | Alias table in `UICore::ReadTextureInfo`; tolerant XML parsing (`maingame.xml` without `<main>`, unknown color names) |
 | PDA | Tasks/diary/contacts/ranking tabs | Different PDA | Separate `CUISHoC*Wnd` windows in SoC mode |
+| String tables | Single-byte text (windows-1252 bytes, header says windows-1251) | Same | The engine doesn't convert encodings: our overlays must be stored as windows-1252, not UTF-8 |
 | Scripts | Non-normalized direction vectors, duplicate `give_task` ids, no task type | Strict | Normalize/warn instead of assert; default task type storyline |
 
 ### Script API
