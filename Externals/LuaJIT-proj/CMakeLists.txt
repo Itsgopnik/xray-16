@@ -579,6 +579,12 @@ target_compile_options(xrLuaJIT
     -Wno-comment
 )
 
+# LuaJIT intentionally reads past the end of strings (fast compare, hashing),
+# which AddressSanitizer reports as global-buffer-overflow. Don't instrument it.
+if (XRAY_USE_ASAN)
+    target_compile_options(xrLuaJIT PRIVATE -fno-sanitize=address)
+endif()
+
 set_target_properties(xrLuaJIT PROPERTIES
     PREFIX ""
     UNITY_BUILD OFF
