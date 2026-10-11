@@ -738,6 +738,9 @@ bool CInventory::Action(u16 cmd, u32 flags)
     break;
     case kARTEFACT:
     {
+        // SoC has no artefact slot (slots end before ARTEFACT_SLOT)
+        if (ARTEFACT_SLOT > LastSlot())
+            break;
         b_send_event = true;
         if (flags & CMD_START)
         {
