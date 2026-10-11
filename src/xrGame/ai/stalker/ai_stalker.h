@@ -241,7 +241,11 @@ public:
     virtual const MonsterSpace::SBoneRotation& head_orientation() const;
 
     // InventoryOwner stuff
-    virtual bool CanPutInSlot(PIItem item, u32 slot) { return (slot != OUTFIT_SLOT) && (slot != PDA_SLOT); };
+    // SoC: stalkers keep their PDA in the PDA slot, CPda::GetPdaFromOwner() and the PDA contacts rely on it
+    virtual bool CanPutInSlot(PIItem item, u32 slot)
+    {
+        return (slot != OUTFIT_SLOT) && (slot != PDA_SLOT || ShadowOfChernobylMode);
+    }
     //////////////////////////////////////////////////////////////////////////
     // action/evaluators support functions
     //////////////////////////////////////////////////////////////////////////
