@@ -1,0 +1,300 @@
+-- OpenXRay smoke test driver.
+--
+-- Loaded by the engine through "-test_script <this file>" (non-MASTER_GOLD builds)
+-- on every script engine (re)start, so it is executed again after ALife start
+-- and after every game load. State that must survive is kept in files.
+--
+-- Environment (set by run_smoke.sh):
+--   XRAY_SMOKE_DIR    directory for state.txt and results.txt
+--   XRAY_SMOKE_PHASE  menu | play | load
+--
+-- Results are appended to results.txt as "PASS|FAIL <step> <details>".
+
+local smoke_dir = os.getenv("XRAY_SMOKE_DIR")
+local phase = os.getenv("XRAY_SMOKE_PHASE")
+if not smoke_dir or not phase then
+    return
+end
+
+local SAVE_NAME = "smoke_test"
+
+local function say(text)
+    (log1 or log)("[smoke] " .. text)
+    flush()
+end
+
+local function report(ok, step, details)
+    local f = io.open(smoke_dir .. "/results.txt", "a")
+    if f then
+        f:write(string.format("%s %s %s\n", ok and "PASS" or "FAIL", step, details or ""))
+        f:close()
+    end
+    say(string.format("%s %s %s", ok and "PASS" or "FAIL", step, details or ""))
+end
+
+local function read_state()
+    local state = {}
+    local f = io.open(smoke_dir .. "/state.txt", "r")
+    if f then
+        for line in f:lines() do
+            local k, v = line:match("^(%S+)%s*=%s*(.-)$")
+            if k then
+                state[k] = v
+            end
+        end
+        f:close()
+    end
+    return state
+end
+
+local function write_state(state)
+    local f = io.open(smoke_dir .. "/state.txt", "w")
+    for k, v in pairs(state) do
+        f:write(k .. " = " .. tostring(v) .. "\n")
+    end
+    f:close()
+end
+
+local function console(cmd)
+    say("console: " .. cmd)
+    get_console():execute(cmd)
+end
+
+local function save_file_exists()
+    local path = getFS():update_path("$game_saves$", SAVE_NAME .. ".sav")
+    local f = io.open(path, "rb")
+    if f then
+        f:close()
+        return true
+    end
+    return false
+end
+
+-- Tiny step sequencer driven by level.add_call / main menu Update
+local steps, step_index, step_started = {}, 1, nil
+
+local function run_steps()
+    local step = steps[step_index]
+    if not step then
+        return true
+    end
+    local now = time_global()
+    step_started = step_started or now
+    local ok, done = pcall(step, now - step_started)
+    if not ok then
+        report(false, "driver", "script error: " .. tostring(done))
+        console("quit")
+        steps = {}
+        return true
+    end
+    if done then
+        step_index = step_index + 1
+        step_started = nil
+    end
+    return false
+end
+
+local function wait(ms)
+    return function(elapsed) return elapsed >= ms end
+end
+
+local function actor()
+    return db.actor
+end
+
+local function find_enemy()
+    local a = actor()
+    local best, best_dist
+    for id = 1, 65534 do
+        local obj = level.object_by_id(id)
+        if obj and id ~= a:id() and (obj:is_monster() or obj:is_stalker()) and obj:alive()
+            and obj:relation(a) == game_object.enemy and obj:story_id() == 4294967295 then
+            local dist = obj:position():distance_to(a:position())
+            if not best or dist < best_dist then
+                best, best_dist = obj, dist
+            end
+        end
+    end
+    return best, best_dist
+end
+
+-- Is the object dead? Checks the online object first, then the server entity.
+local function verify_dead(id, step)
+    local obj = level.object_by_id(id)
+    if obj then
+        report(not obj:alive(), step, string.format("id=%d %s online alive=%s", id, obj:name(), tostring(obj:alive())))
+        return
+    end
+    local se = alife():object(id)
+    if not se then
+        report(true, step, string.format("id=%d removed from alife (corpse cleaned up)", id))
+        return
+    end
+    report(not se:alive(), step, string.format("id=%d %s offline alive=%s", id, se:name(), tostring(se:alive())))
+end
+
+local function play_steps()
+    local state = read_state()
+    if state.stage == "saved" then
+        -- Second actor bind in the same process: the in-process load finished
+        return {
+            wait(10000),
+            function()
+                report(true, "load_inprocess", "actor spawned after 'load " .. SAVE_NAME .. "'")
+                verify_dead(tonumber(state.target_id), "enemy_dead_after_inprocess_load")
+                state.stage = "done"
+                write_state(state)
+                return true
+            end,
+            wait(2000),
+            function() console("quit") return true end,
+        }
+    end
+
+    local target_id
+    local save_attempts = 0
+    return {
+        wait(20000),
+        function()
+            report(true, "new_game", "actor spawned on level " .. level.name())
+            return true
+        end,
+        function()
+            local obj, dist = find_enemy()
+            if not obj then
+                report(false, "kill_enemy", "no living enemy found on the level")
+                return true
+            end
+            target_id = obj:id()
+            say(string.format("killing %s (id=%d, section=%s, %.1f m away)", obj:name(), target_id, obj:section(), dist))
+            obj:kill(actor())
+            write_state({ stage = "killed", target_id = target_id, target_name = obj:name() })
+            return true
+        end,
+        wait(5000),
+        function()
+            if target_id then
+                verify_dead(target_id, "kill_enemy")
+            end
+            return true
+        end,
+        function(elapsed)
+            -- The save console command refuses to save while autosave isn't ready, so retry
+            if save_file_exists() then
+                report(true, "save", SAVE_NAME .. ".sav written")
+                return true
+            end
+            if elapsed >= save_attempts * 10000 then
+                if save_attempts == 3 then
+                    report(false, "save", SAVE_NAME .. ".sav not written after 3 attempts")
+                    console("quit")
+                    steps = {}
+                    return true
+                end
+                save_attempts = save_attempts + 1
+                console("save " .. SAVE_NAME)
+            end
+            return false
+        end,
+        function()
+            local s = read_state()
+            s.stage = "saved"
+            write_state(s)
+            console("load " .. SAVE_NAME)
+            return true
+        end,
+    }
+end
+
+local function load_steps()
+    local state = read_state()
+    return {
+        wait(10000),
+        function()
+            report(true, "load_cold", "actor spawned from command line load of " .. SAVE_NAME)
+            if state.target_id then
+                verify_dead(tonumber(state.target_id), "enemy_dead_after_cold_load")
+            else
+                report(false, "enemy_dead_after_cold_load", "no target id recorded by the play phase")
+            end
+            return true
+        end,
+        wait(2000),
+        function() console("quit") return true end,
+    }
+end
+
+local function on_actor_bound()
+    if phase == "play" then
+        steps = play_steps()
+    elseif phase == "load" then
+        steps = load_steps()
+    else
+        return
+    end
+    step_index, step_started = 1, nil
+    level.add_call(run_steps, function() end)
+end
+
+-- The actor binder differs per game (SoC: bind_stalker.actor_init, CS/CoP: bind_actor.init),
+-- so take it from system.ltx like the engine does.
+local function hook_actor_binder()
+    local binding = system_ini():r_string("actor", "script_binding")
+    local module_name, func_name = binding:match("^([%w_]+)%.([%w_]+)$")
+    if not module_name then
+        report(false, "hook", "unexpected [actor] script_binding: " .. tostring(binding))
+        return
+    end
+    prefetch(module_name)
+    local module = _G[module_name]
+    local original = module and module[func_name]
+    if type(original) ~= "function" then
+        report(false, "hook", binding .. " not found")
+        return
+    end
+    module[func_name] = function(obj)
+        original(obj)
+        say("actor bound")
+        on_actor_bound()
+    end
+end
+
+local function hook_main_menu()
+    prefetch("ui_main_menu")
+    local cls = ui_main_menu and ui_main_menu.main_menu
+    if not cls then
+        report(false, "hook", "ui_main_menu.main_menu not found")
+        return
+    end
+    local original = cls.Update
+    local menu_shown = false
+    steps = {
+        function()
+            report(true, "main_menu", "main menu is updating")
+            return true
+        end,
+        wait(3000),
+        function() console("quit") return true end,
+    }
+    cls.Update = function(self)
+        if original then
+            original(self)
+        else
+            CUIScriptWnd.Update(self)
+        end
+        if not menu_shown then
+            menu_shown = true
+            say("main menu shown")
+        end
+        run_steps()
+    end
+end
+
+say("driver loaded, phase=" .. phase)
+if phase == "menu" then
+    -- The main menu runs in the script engine created at application start;
+    -- ALife never starts in this phase.
+    hook_main_menu()
+else
+    hook_actor_binder()
+end

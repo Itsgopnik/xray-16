@@ -132,6 +132,26 @@ void CAI_Space::LoadCommonScripts()
         }
     }
     xr_delete(l_tpIniFile);
+
+#ifndef MASTER_GOLD
+    // Developer hook for automated tests: -test_script <path to lua file>
+    // Runs on every script engine (re)start, so it survives ALife start and game loads.
+    if (pcstr param = strstr(Core.Params, "-test_script "))
+    {
+        string_path path;
+        if (sscanf(param + xr_strlen("-test_script "), "%[^ ]", path) == 1)
+        {
+            lua_State* L = GEnv.ScriptEngine->lua();
+            if (luaL_loadfile(L, path) || lua_pcall(L, 0, 0, 0))
+            {
+                Msg("! -test_script [%s] failed: %s", path, lua_tostring(L, -1));
+                lua_pop(L, 1);
+            }
+            else
+                Msg("* -test_script [%s] executed", path);
+        }
+    }
+#endif
 #endif
 }
 
