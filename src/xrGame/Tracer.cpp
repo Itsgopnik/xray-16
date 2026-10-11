@@ -12,7 +12,9 @@
 CTracer::CTracer()
 {
     cpcstr sh_name = READ_IF_EXISTS(pSettings, r_string, "bullet_manager", "tracer_shader", "effects\\bullet_tracer");
-    cpcstr tx_name = READ_IF_EXISTS(pSettings, r_string, "bullet_manager", "tracer_texture", "fx\\fx_tracer_weapons");
+    // SoC archives don't carry fx\fx_tracer_weapons; they have fx\fx_tracer
+    cpcstr tx_name = READ_IF_EXISTS(pSettings, r_string, "bullet_manager", "tracer_texture",
+        ShadowOfChernobylMode ? "fx\\fx_tracer" : "fx\\fx_tracer_weapons");
     m_circle_size_k = pSettings->read_if_exists<float>("bullet_manager", "fire_circle_k", 2.0f);
 
     sh_Tracer->create(sh_name, tx_name);

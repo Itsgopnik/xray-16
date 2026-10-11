@@ -23,6 +23,9 @@ namespace upgrade
 
 Manager::Manager()
 {
+    // The upgrade system was introduced in CS; SoC data has no upgrade sections.
+    if (ShadowOfChernobylMode)
+        return;
     load_all_properties(); // first
     load_all_inventory();
 }

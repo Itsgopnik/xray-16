@@ -432,6 +432,13 @@ void CGamePersistent::game_loaded()
         if (g_pGameLevel && g_pGameLevel->bReady && g_keypress_on_start &&
             load_screen_renderer.NeedsUserInput() && m_game_params.m_e_game_type == eGameIDSingle)
         {
+            // SoC data doesn't define the "game_loaded" tutorial.
+            // End the load screen directly (same as the failed-Start fallback path).
+            if (ShadowOfChernobylMode)
+            {
+                update_game_loaded();
+                return;
+            }
             VERIFY(NULL == m_intro);
             m_intro = xr_new<CUISequencer>();
             m_intro->m_on_destroy_event.bind(this, &CGamePersistent::update_game_loaded);
