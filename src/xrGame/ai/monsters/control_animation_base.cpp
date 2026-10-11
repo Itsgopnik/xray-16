@@ -527,10 +527,13 @@ void CControlAnimationBase::UpdateAnimCount()
             (*it)->count = count;
         else
         {
-            xr_sprintf(s, "Error! No animation: %s for monster %s", (*it)->target_name.c_str(), m_object->cName().c_str());
-            Msg("! %s", s);
             // Missing animations are handled below (removed from storage).
             // Don't VERIFY here: SoC resources can lack some motion variants.
+            // Log once per (visual, anim): swarm spawns share the same visual set.
+            static xr_set<std::pair<shared_str, shared_str>> reportedMissingAnims;
+            if (reportedMissingAnims.emplace(m_object->cNameVisual(), (*it)->target_name).second)
+                Msg("~ No animation: %s for monster %s (visual: %s) — removed from set",
+                    (*it)->target_name.c_str(), m_object->cName().c_str(), m_object->cNameVisual().c_str());
             subjectsToDelete.emplace_back(std::distance(m_anim_storage.begin(), it));
         }
     }

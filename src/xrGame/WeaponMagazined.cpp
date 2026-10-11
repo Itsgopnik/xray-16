@@ -59,7 +59,10 @@ bool CWeaponMagazined::WeaponSoundExist(pcstr section, pcstr sound_name) const
     if (process_if_exists_set(section, sound_name, &CInifile::r_string, str, true))
         return true;
 #ifdef DEBUG
-    Msg("~ [WARNING] ------ Sound [%s] does not exist in [%s]", sound_name, section);
+    // In SoC/CS the CoP-style sound entries are systematically absent
+    // (legacy snd_* fallbacks are used) — don't spam the log.
+    if (!ShadowOfChernobylMode)
+        Msg("~ [WARNING] ------ Sound [%s] does not exist in [%s]", sound_name, section);
 #endif
     return false;
 }

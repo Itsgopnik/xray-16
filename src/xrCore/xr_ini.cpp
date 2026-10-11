@@ -581,7 +581,7 @@ void CInifile::Load(IReader* F, pcstr path, allow_include_func_t allow_include_f
                             if (!(xr_strlen(value_raw) + xr_strlen(str_add_raw) < sizeof value_raw)
                                 || incorrectFormat)
                             {
-                                Msg("! Incorrect inifile format: section[%s], variable[%s]. Odd number of quotes "
+                                Msg("~ Incorrect inifile format: section[%s], variable[%s]. Odd number of quotes "
                                     "(\") found, but "
                                     "should be even. Trimming it to the first new line.",
                                     Current->Name.c_str(), name);

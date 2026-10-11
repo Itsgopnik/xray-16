@@ -399,7 +399,9 @@ bool CHudItem::isHUDAnimationExist(pcstr anim_name, bool silent) const
     else
         return false; // No hud section, no warning
 #ifdef DEBUG
-    if (!silent)
+    // In SoC/CS the CoP-style anm_* entries are systematically absent (legacy
+    // anim_* fallbacks are used) — don't spam the log with expected misses.
+    if (!silent && !ShadowOfChernobylMode)
         Msg("~ [WARNING] ------ Animation [%s] does not exist in [%s]", anim_name, HudSection().c_str());
 #endif
     return false;

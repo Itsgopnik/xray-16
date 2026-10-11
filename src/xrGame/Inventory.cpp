@@ -92,8 +92,16 @@ CInventory::CInventory()
 #ifndef MASTER_GOLD
     if (m_iLastSlot != slotsCount)
     {
-        Log("~ Not critical, but check [inventory] section in your system.ltx.");
-        Msg("~ slots_count = %u, but real slots count is %u", slotsCount, m_iLastSlot);
+        // The declared slot count differs from the scanned slot_persistent_* keys for
+        // every inventory owner (SoC: the artefact slot is implicit). Report once per
+        // session — the config is global, so the first occurrence says it all.
+        static bool alreadyReported = false;
+        if (!alreadyReported)
+        {
+            alreadyReported = true;
+            Log("~ Not critical, but check [inventory] section in your system.ltx.");
+            Msg("~ slots_count = %u, but real slots count is %u", slotsCount, m_iLastSlot);
+        }
     }
 #endif
 

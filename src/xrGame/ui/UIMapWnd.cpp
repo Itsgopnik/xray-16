@@ -200,27 +200,32 @@ bool CUIMapWnd::Init(cpcstr xml_name, cpcstr start_from, bool critical /*= true*
     }
 
 #ifdef DEBUG
-    GAME_MAPS::iterator it = m_GameMaps.begin();
-    GAME_MAPS::iterator it2;
-    for (; it != m_GameMaps.end(); ++it)
+    // SoC/CS level rects are schematic (underground levels share the surface rect,
+    // adjacent levels touch) — the CoP disjointness check doesn't apply to them.
+    if (!ShadowOfChernobylMode)
     {
-        CUILevelMap* l = smart_cast<CUILevelMap*>(it->second);
-        VERIFY(l);
-        for (it2 = it; it2 != m_GameMaps.end(); ++it2)
+        GAME_MAPS::iterator it = m_GameMaps.begin();
+        GAME_MAPS::iterator it2;
+        for (; it != m_GameMaps.end(); ++it)
         {
-            if (it == it2)
-                continue;
-            CUILevelMap* l2 = smart_cast<CUILevelMap*>(it2->second);
-            VERIFY(l2);
-            if (l->GlobalRect().intersected(l2->GlobalRect()))
+            CUILevelMap* l = smart_cast<CUILevelMap*>(it->second);
+            VERIFY(l);
+            for (it2 = it; it2 != m_GameMaps.end(); ++it2)
             {
-                Msg(" --error-incorrect map definition global rect of map [%s] intersects with [%s]", l->MapName().c_str(),
-                    l2->MapName().c_str());
+                if (it == it2)
+                    continue;
+                CUILevelMap* l2 = smart_cast<CUILevelMap*>(it2->second);
+                VERIFY(l2);
+                if (l->GlobalRect().intersected(l2->GlobalRect()))
+                {
+                    Msg(" --error-incorrect map definition global rect of map [%s] intersects with [%s]", l->MapName().c_str(),
+                        l2->MapName().c_str());
+                }
             }
-        }
-        if (FALSE == l->GlobalRect().intersected(GlobalMap()->BoundRect()))
-        {
-            Msg(" --error-incorrect map definition map [%s] places outside global map", l->MapName().c_str());
+            if (FALSE == l->GlobalRect().intersected(GlobalMap()->BoundRect()))
+            {
+                Msg(" --error-incorrect map definition map [%s] places outside global map", l->MapName().c_str());
+            }
         }
     }
 #endif

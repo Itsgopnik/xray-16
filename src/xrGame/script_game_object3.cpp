@@ -589,7 +589,7 @@ void CScriptGameObject::set_desired_direction(const Fvector* desired_direction)
         GEnv.ScriptEngine->script_log(LuaMessageType::Error, "CAI_Stalker : cannot access class member movement!");
     else
     {
-        if (fsimilar(desired_direction->magnitude(), 0.f))
+        if (fsimilar(desired_direction->magnitude(), 0.f) && !ShadowOfChernobylMode)
             GEnv.ScriptEngine->script_log(LuaMessageType::Error,
                 "CAI_Stalker : [%s] set_desired_direction - you passed zero direction!", stalker->cName().c_str());
         else if (!ShadowOfChernobylMode)

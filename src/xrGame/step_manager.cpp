@@ -77,7 +77,7 @@ void CStepManager::reload(LPCSTR section)
             IKinematicsAnimated* KA = smart_cast<IKinematicsAnimated*>(m_object->Visual());
             VERIFY(KA);
 
-            Msg("! (CStepManager::reload) no anim :%s object:%s, visual: %s, step_params section: %s ", anim_name,
+            Msg("~ (CStepManager::reload) no anim :%s object:%s, visual: %s, step_params section: %s ", anim_name,
                 m_object->cName().c_str(), m_object->cNameVisual().c_str(), anim_section);
 
 #endif

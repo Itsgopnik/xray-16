@@ -39,7 +39,10 @@ void CUICustomMap::Initialize(shared_str name, LPCSTR sh_name)
     }
     else
     {
-        Msg("! default LevelMap used for level[%s]", name.c_str());
+        // Old games keep map data centrally in game_maps.ltx ([def_map] + [level]);
+        // the per-level [level_map] section is a CoP addition — not an error there.
+        if (!ShadowOfChernobylMode)
+            Msg("! default LevelMap used for level[%s]", name.c_str());
         Init_internal(name, *pGameIni, "def_map", sh_name);
         m_name = name;
     }
@@ -446,14 +449,19 @@ void CUILevelMap::Init_internal(const shared_str& name, const CInifile& pLtx, co
     m_GlobalRect.set(tmp.x, tmp.y, tmp.z, tmp.w);
 
 #ifdef DEBUG
-    float kw = m_GlobalRect.width() / BoundRect().width();
-    float kh = m_GlobalRect.height() / BoundRect().height();
-
-    if (FALSE == fsimilar(kw, kh, EPS_L))
+    // Old-game global maps are schematic; the CoP aspect-ratio requirement
+    // doesn't apply to SoC/CS data.
+    if (!ShadowOfChernobylMode)
     {
-        Msg(" --incorrect global rect definition for map [%s]  kw=%f kh=%f", MapName().c_str(), kw, kh);
-        Msg(" --try x2=%f or  y2=%f", m_GlobalRect.x1 + kh * BoundRect().width(),
-            m_GlobalRect.y1 + kw * BoundRect().height());
+        float kw = m_GlobalRect.width() / BoundRect().width();
+        float kh = m_GlobalRect.height() / BoundRect().height();
+
+        if (FALSE == fsimilar(kw, kh, EPS_L))
+        {
+            Msg(" --incorrect global rect definition for map [%s]  kw=%f kh=%f", MapName().c_str(), kw, kh);
+            Msg(" --try x2=%f or  y2=%f", m_GlobalRect.x1 + kh * BoundRect().width(),
+                m_GlobalRect.y1 + kw * BoundRect().height());
+        }
     }
 #endif
 }
