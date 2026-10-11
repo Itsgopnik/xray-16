@@ -57,6 +57,8 @@ private:
     u32 max_move_dist;
 
     LPCSTR get_current_animation();
+    static LPCSTR get_animation_name(u32 index);
+    MotionID resolve_current_animation();
     static void animation_end(CBlend* B);
 #ifdef _DEBUG
     virtual void debug_on_key(int key);

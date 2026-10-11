@@ -275,10 +275,52 @@ void CAI_Dog::start_animation()
         return;
     }
 
+    const MotionID motion = resolve_current_animation();
+    if (!motion.valid())
+    {
+        // Nothing to play: end the custom animation state instead of waiting forever
+        b_state_anim = false;
+        b_anim_end = true;
+        b_state_end = false;
+        return;
+    }
+
     b_state_anim = true;
     com_man().script_capture(ControlCom::eControlAnimation);
-    smart_cast<IKinematicsAnimated*>(Visual())->PlayCycle(get_current_animation(), TRUE, animation_end, this);
+    smart_cast<IKinematicsAnimated*>(Visual())->PlayCycle(motion, TRUE, animation_end, this);
     b_state_end = true;
+}
+
+// The group state animations are CoP motion names. SoC dog visuals lack 9 of them
+// (smelling, digging, howling, growling, shaking and two sit idles); ID_Cycle() would
+// R_ASSERT as soon as a pack rests. Fall back to the closest motion SoC visuals have.
+MotionID CAI_Dog::resolve_current_animation()
+{
+    IKinematicsAnimated* kinematics = smart_cast<IKinematicsAnimated*>(Visual());
+    const LPCSTR name = get_current_animation();
+    MotionID motion = kinematics->ID_Cycle_Safe(name);
+    if (motion.valid())
+        return motion;
+
+    LPCSTR fallback;
+    switch (current_anim)
+    {
+    case 1: case 2: case 3: case 4: case 5: fallback = "stand_idle_1"; break; // sniffing forward
+    case 6: fallback = "stand_threaten_0"; break; // growl -> bark
+    case 10: case 11: fallback = "sit_idle_0"; break;
+    default: fallback = "stand_idle_0"; break;
+    }
+    motion = kinematics->ID_Cycle_Safe(fallback);
+    if (!motion.valid())
+    {
+        fallback = "stand_idle_0";
+        motion = kinematics->ID_Cycle_Safe(fallback);
+    }
+
+    static xr_set<std::pair<shared_str, shared_str>> reported;
+    if (reported.emplace(cNameVisual(), name).second)
+        Msg("~ dog visual [%s] has no animation [%s], using [%s]", cNameVisual().c_str(), name, fallback);
+    return motion;
 }
 
 void CAI_Dog::animation_end(CBlend* B)
@@ -298,9 +340,11 @@ void CAI_Dog::anim_end_reinit()
 
 bool CAI_Dog::get_custom_anim_state() { return b_state_anim; }
 void CAI_Dog::set_custom_anim_state(bool b_state_animation) { b_state_anim = b_state_animation; }
-LPCSTR CAI_Dog::get_current_animation()
+LPCSTR CAI_Dog::get_current_animation() { return get_animation_name(current_anim); }
+
+LPCSTR CAI_Dog::get_animation_name(u32 index)
 {
-    switch (current_anim)
+    switch (index)
     {
     case 1:
         return "stand_idle_smelling_up_0"; //Нюхает вверх
@@ -342,6 +386,27 @@ LPCSTR CAI_Dog::get_current_animation()
 void CAI_Dog::reload(LPCSTR section)
 {
     inherited::reload(section);
+#ifndef MASTER_GOLD
+    // List the group state animations the visual lacks (once per visual)
+    if (IKinematicsAnimated* kinematics = smart_cast<IKinematicsAnimated*>(Visual()))
+    {
+        static xr_set<shared_str> checked;
+        if (checked.insert(cNameVisual()).second)
+        {
+            string1024 missing{};
+            for (u32 i = 0; i <= 16; ++i)
+            {
+                if (!kinematics->ID_Cycle_Safe(get_animation_name(i)).valid())
+                {
+                    xr_strcat(missing, " ");
+                    xr_strcat(missing, get_animation_name(i));
+                }
+            }
+            if (missing[0])
+                Msg("~ dog visual [%s] lacks group animations:%s", cNameVisual().c_str(), missing);
+        }
+    }
+#endif
     if (!ShadowOfChernobylMode)
     {
         com_man().load_jump_data(0, "jump_ataka_01", "jump_ataka_02", "jump_ataka_03",
