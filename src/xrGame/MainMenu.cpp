@@ -112,14 +112,13 @@ CMainMenu::CMainMenu()
         g_statHint = xr_new<CUIButtonHint>();
         m_pGameSpyFull = xr_new<CGameSpy_Full>();
 
+        // The vector is indexed by EErrorDlg: keep a nullptr slot for missing templates
+        // (old games lack some), removing it would shift all following dialogs.
         for (cpcstr name : ErrMsgBoxTemplate)
         {
-            CUIMessageBoxEx* msgBox = m_pMB_ErrDlgs.emplace_back(xr_new<CUIMessageBoxEx>());
+            CUIMessageBoxEx*& msgBox = m_pMB_ErrDlgs.emplace_back(xr_new<CUIMessageBoxEx>());
             if (!msgBox->InitMessageBox(name))
-            {
-                m_pMB_ErrDlgs.pop_back();
                 xr_delete(msgBox);
-            }
         }
 
         CUIMessageBoxEx* downloadMsg = m_pMB_ErrDlgs[DownloadMPMap];
@@ -616,7 +615,10 @@ void CMainMenu::CheckForErrorDlg()
 {
     if (m_NeedErrDialog == ErrNoError)
         return;
-    m_pMB_ErrDlgs[m_NeedErrDialog]->ShowDialog(false);
+    if (CUIMessageBoxEx* msgBox = m_pMB_ErrDlgs[m_NeedErrDialog])
+        msgBox->ShowDialog(false);
+    else
+        Msg("! Error dialog %d has no message box template", int(m_NeedErrDialog));
     m_NeedErrDialog = ErrNoError;
 };
 
@@ -662,7 +664,8 @@ void CMainMenu::OnPatchCheck(bool success)
 {
     if (!success)
     {
-        m_pMB_ErrDlgs[NoNewPatch]->ShowDialog(false);
+        if (m_pMB_ErrDlgs[NoNewPatch])
+            m_pMB_ErrDlgs[NoNewPatch]->ShowDialog(false);
         return;
     }
     if (m_sPDProgress.IsInProgress)
@@ -687,6 +690,11 @@ void CMainMenu::OnSessionTerminate(LPCSTR reason)
         STRCONCAT(text, str, " ", reason);
     }
 
+    if (!m_pMB_ErrDlgs[SessionTerminate])
+    {
+        Msg("! %s", StringTable().translate(text).c_str());
+        return;
+    }
     m_pMB_ErrDlgs[SessionTerminate]->SetText(StringTable().translate(text).c_str());
     SetErrorDialog(CMainMenu::SessionTerminate);
 }
@@ -697,6 +705,11 @@ void CMainMenu::OnLoadError(LPCSTR module)
     string1024 Text;
     strconcat(sizeof(Text), Text, str, " ");
     xr_strcat(Text, sizeof(Text), module);
+    if (!m_pMB_ErrDlgs[LoadingError])
+    {
+        Msg("! %s", Text);
+        return;
+    }
     m_pMB_ErrDlgs[LoadingError]->SetText(Text);
     SetErrorDialog(CMainMenu::LoadingError);
 }
