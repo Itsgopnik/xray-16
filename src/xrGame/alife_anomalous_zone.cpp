@@ -136,6 +136,9 @@ void CSE_ALifeAnomalousZone::spawn_artefacts()
 
             l_tpALifeItemArtefact->m_fAnomalyValue = m_maxPower * (1.f - object->o_Position.distance_to(o_Position) /
                 m_offline_interactive_radius);
+#ifndef MASTER_GOLD
+            Msg("* [%s] spawned artefact [%s] id=%d", name_replace(), object->name(), object->ID);
+#endif
         }
     }
 }

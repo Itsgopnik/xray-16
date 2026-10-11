@@ -65,13 +65,43 @@ void CSE_ALifeCustomZone::script_register(lua_State* luaState)
     ];
 }
 
+#ifdef XRGAME_EXPORTS
+namespace
+{
+// SoC 1.0006 exported spawn_artefacts() to Lua (se_zones.script calls it).
+// Spawning is only valid for offline zones.
+void script_spawn_artefacts(CSE_ALifeAnomalousZone* zone)
+{
+    if (zone->m_bOnline)
+    {
+        Msg("! [%s] spawn_artefacts called for an online zone, ignored", zone->name_replace());
+        return;
+    }
+    zone->spawn_artefacts();
+}
+
+template <typename Class>
+Class& register_shoc_zone_methods(Class& instance)
+{
+    if (ShadowOfChernobylMode)
+        instance.def("spawn_artefacts", &script_spawn_artefacts);
+    return instance;
+}
+} // namespace
+#endif
+
 void CSE_ALifeAnomalousZone::script_register(lua_State* luaState)
 {
     using namespace luabind;
 
     module(luaState)
     [
+#ifdef XRGAME_EXPORTS
+        register_shoc_zone_methods(
+            luabind_class_dynamic_alife1(CSE_ALifeAnomalousZone, "cse_anomalous_zone", CSE_ALifeCustomZone))
+#else
         luabind_class_dynamic_alife1(CSE_ALifeAnomalousZone, "cse_anomalous_zone", CSE_ALifeCustomZone)
+#endif
     ];
 }
 
