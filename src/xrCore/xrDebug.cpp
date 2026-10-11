@@ -72,6 +72,10 @@ AssertionResult xrDebug::ShowMessage(pcstr title, pcstr message, bool simpleMode
     default: return AssertionResult::undefined;
     }
 #else
+    // Unattended runs (tests, CI): nobody can click a dialog, so abort right away
+    if (Core.Params && strstr(Core.Params, "-silent_error_mode"))
+        return simpleMode ? AssertionResult::ok : AssertionResult::abort;
+
     if (simpleMode)
     {
         SDL_Window* parent = windowHandler ? windowHandler->GetApplicationWindow() : nullptr;
