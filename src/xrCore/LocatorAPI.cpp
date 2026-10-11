@@ -468,9 +468,6 @@ void CLocatorAPI::LoadArchive(archive& A, pcstr entrypoint)
         string_path full;
         strconcat(full, fs_entry_point, header.name);
         Register(full, A.vfs_idx, header.crc, header.ptr, header.size_real, header.size_compr, A.modif);
-        // Temporary: log UI/scroll texture file names for SHoC compat debugging
-        if (strstr(header.name, "scroll") || strstr(header.name, "\\ui\\") || strstr(header.name, "/ui/"))
-            Msg("~ FS_ARCHIVE [%s]: %s", A.path.c_str(), header.name);
     }
     hdr->close();
 } //-V773
