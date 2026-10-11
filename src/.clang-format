@@ -12,7 +12,12 @@ AlignConsecutiveAssignments: None
 AlignConsecutiveBitFields: AcrossComments
 AlignConsecutiveDeclarations: None
 AlignConsecutiveMacros: None
-AlignConsecutiveShortCaseStatements: AcrossComments
+# Kurzform 'AcrossComments' wird von clang-format 23+ nicht mehr akzeptiert
+# (Option hat dort einen erweiterten Typ bekommen); die Mapping-Form ist
+# semantisch identisch und funktioniert mit clang-format 17-23.
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossComments: true
 AlignEscapedNewlines: LeftWithLastLine
 AlignOperands: DontAlign
 AlignTrailingComments:
@@ -94,7 +99,6 @@ IndentRequiresClause: false
 IndentWrappedFunctionNames: false
 InsertBraces: false
 InsertNewlineAtEOF: true
-InsertTrailingCommas: false
 KeepEmptyLines:
   AtEndOfFile: false
   AtStartOfBlock: false
@@ -117,7 +121,11 @@ PenaltyBreakString: 1000
 PenaltyExcessCharacter: 10
 PenaltyReturnTypeOnItsOwnLine: 1000000
 PointerAlignment: Left
-QualifierOrder: [friend, volatile, inline, static, constexpr, const, restrict, type]
+# In clang-format 23+ entfernt (war experimentell); clang-format 20 (CI)
+# akzeptiert die Option weiterhin — auskommentiert, damit neuere Versionen
+# die Config parsen koennen. Auto-Normalisierung von Qualifier-Reihenfolge
+# entfaellt damit, bestehender Code ist bereits kanonisch geordnet.
+#QualifierOrder: [friend, volatile, inline, static, constexpr, const, restrict, type]
 ReferenceAlignment: Pointer
 ReflowComments: IndentOnly
 RemoveEmptyLinesInUnwrappedLines: true
