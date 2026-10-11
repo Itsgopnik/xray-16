@@ -12,6 +12,7 @@
 #
 # Usage: run_smoke.sh --game <dir with fsgame.ltx> --bin <dir with xr_3da>
 #                     [--out <dir>] [--timeout <seconds per phase>] [--phases "menu play load"]
+#                     [--gdb]  (run the engine under gdb; backtrace of a crash goes to <phase>.stdout.log)
 #                     [-- <extra engine arguments, e.g. -soc or -r4>]
 
 set -u
@@ -21,6 +22,7 @@ BIN=""
 OUT=""
 TIMEOUT=300
 PHASES="menu play load"
+GDB=()
 while [ $# -gt 0 ] && [ "$1" != "--" ]; do
     case "$1" in
         --game) GAME=$2; shift ;;
@@ -28,6 +30,7 @@ while [ $# -gt 0 ] && [ "$1" != "--" ]; do
         --out) OUT=$2; shift ;;
         --timeout) TIMEOUT=$2; shift ;;
         --phases) PHASES=$2; shift ;;
+        --gdb) GDB=(gdb -q -batch -ex run -ex "thread apply all bt" -ex "bt full" --args) ;;
         -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option $1" >&2; exit 2 ;;
     esac
@@ -67,7 +70,7 @@ run_phase() {
         cd "$GAME" || exit 1
         export LD_LIBRARY_PATH="$BIN${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
         export XRAY_SMOKE_DIR="$OUT" XRAY_SMOKE_PHASE="$phase"
-        exec timeout -k 15 "$TIMEOUT" "$BIN/xr_3da" -nointro -fsltx "$GAME/fsgame.ltx" \
+        exec timeout -k 15 "$TIMEOUT" "${GDB[@]}" "$BIN/xr_3da" -nointro -fsltx "$GAME/fsgame.ltx" \
             -test_script "$DRIVER" "${EXTRA[@]}" "$@"
     ) > "$OUT/$phase.stdout.log" 2>&1
     local rc=$?
@@ -89,7 +92,13 @@ for phase in $PHASES; do
     case "$phase" in
         menu) run_phase menu ;;
         play) run_phase play -start "server(all/single/alife/new)" "client(localhost)" ;;
-        load) run_phase load -start "server(smoke_test/single/alife/load)" "client(localhost)" ;;
+        load)
+            if [ -f "$SAVES/smoke_test.sav" ]; then
+                run_phase load -start "server(smoke_test/single/alife/load)" "client(localhost)"
+            else
+                echo "FAIL load skipped, no smoke_test.sav from the play phase" >> "$OUT/results.txt"
+            fi
+            ;;
         *) echo "Unknown phase $phase" >&2 ;;
     esac
 done
