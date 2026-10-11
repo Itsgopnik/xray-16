@@ -18,6 +18,7 @@
 #include "movement_manager.h"
 #include "restricted_object.h"
 #include "xrScriptEngine/script_engine.hpp"
+#include "ui/UISHoCRankingWnd.h"
 
 namespace
 {
@@ -76,9 +77,18 @@ void script_register_level_shoc_compat(lua_State* luaState)
     if (!ShadowOfChernobylMode)
         return;
 
+    // Runs on every script engine start, i.e. before ALife (re)registers the stalkers
+    shoc_ranking_clear();
+
     using namespace luabind;
     module(luaState, "level")
     [
         def("actor", &level_actor)
+    ];
+    // Called from se_stalker/bind_stalker (guarded with ~= nil) to fill the PDA ranking
+    module(luaState, "actor_stats")
+    [
+        def("add_to_ranking", &shoc_ranking_add),
+        def("remove_from_ranking", &shoc_ranking_remove)
     ];
 }
