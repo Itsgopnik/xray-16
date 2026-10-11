@@ -142,11 +142,44 @@ level at start ("application start") if the window has no input focus and
 `rs_always_active` is off. Headless runs set `rs_always_active on` for the duration
 of the run.
 
-### Open
+### Physics crash after the kill (fixed in `8e062431b`)
 
-- Intermittent segfault in `CPHSimpleCharacter::UpdateDynamicDamage` right after the
-  scripted kill (once in 7 visible play runs, not reproduced since; 3 runs under gdb
-  were clean). Suspected: contact with the physics body of a dead NPC's item that was
-  destroyed in the same frame.
-- If the save is missing, the cold load segfaults in `CALifeSpawnRegistry::load` after
-  "Cannot find the specified saved game" instead of failing cleanly.
+Segfault or pure virtual call in `CPHSimpleCharacter::UpdateDynamicDamage`
+(`obj->ObjectGetDestroy()`) in the death frame of the scripted kill, about once in 10
+runs. Under gdb the reference object pointer had no valid vtable, and no other thread was
+active.
+
+Cause: when a stalker's ragdoll is created, `AddActiveWeaponCollision()` moves the active
+weapon's collision geoms onto the hand bone. They keep the weapon as physics reference
+object and were only removed when the weapon activated its own shell. SoC's
+`death_manager` releases corpse weapons in the death frame ("just before destroy", no
+shell), so the ragdoll kept geoms pointing to the deleted weapon until the next hard
+impact. Items leaving without a shell now notify the parent, which removes the copies.
+Verified: 30 consecutive headless play runs without a crash.
+
+### Further fixes found on the way
+
+- **Missing save / fatal signal during an error dialog** (`41e4091a1`): the fatal signal
+  handler returned and the engine ran on behind the failed assert. It now terminates.
+- **`xr_terminate` used `exit()`** (`554cd9676`): static destructors ran on the broken
+  state and hid the original error (`SFillPropData` `VERIFY(0 == counter)`).
+- **AddressSanitizer findings** (both on every start):
+  `strncpy_s` read one byte past the source (`19b1026c3`), and the main menu wrote into a
+  deleted message box when an MP template was missing (`8a1537fc1`).
+- `SV:ge_destroy: [N] not found on server` during the kill is harmless: the engine
+  (`CAI_Stalker::Die`) and SoC's `death_manager` both destroy the same ammo.
+
+## AddressSanitizer runs
+
+```sh
+cmake -S . -B bin-asan -DCMAKE_BUILD_TYPE=Debug -DXRAY_USE_ASAN=ON -DMEMORY_ALLOCATOR=standard
+cmake --build bin-asan -j$(nproc)
+ASAN_OPTIONS=detect_leaks=0:detect_odr_violation=0:halt_on_error=1:log_path=/tmp/asan/asan \
+    misc/tests/smoke/run_smoke.sh ... --headless
+```
+
+Note: all build directories write their binaries to `bin/x86_64/<config>`, so an ASan
+build replaces the normal Debug binaries. Rebuild the normal tree afterwards (delete
+`bin/x86_64/Debug/*.so` and `xr_3da` first, otherwise make considers them up to date).
+`detect_odr_violation=0` is needed because ImGui is linked into both xrEngine and xrGame.
+13 ASan play runs with all fixes were clean.
