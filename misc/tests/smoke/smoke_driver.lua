@@ -265,7 +265,7 @@ local function dogs_steps()
     }
 end
 
--- Open the PDA on the map and tasks tabs and take a screenshot of each
+-- Open every PDA tab and take a screenshot of each
 local function pda_steps()
     local pda
     local function show_tab(section)
@@ -281,12 +281,16 @@ local function pda_steps()
         end
     end
     local function shot() console("screenshot") return true end
-    return {
-        wait(8000),
-        show_tab("eptMap"), wait(3000), shot, wait(2000),
-        show_tab("eptTasks"), wait(3000), shot, wait(2000),
-        function() pda:HideDialog() console("quit") return true end,
-    }
+    local result = { wait(8000) }
+    for _, section in ipairs({ "eptTasks", "eptMap", "eptLogs", "eptContacts", "eptRanking",
+                               "eptStatistics", "eptEncyclopedia" }) do
+        table.insert(result, show_tab(section))
+        table.insert(result, wait(3000))
+        table.insert(result, shot)
+        table.insert(result, wait(2000))
+    end
+    table.insert(result, function() pda:HideDialog() console("quit") return true end)
+    return result
 end
 
 local function on_actor_bound()
