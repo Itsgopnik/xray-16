@@ -167,6 +167,7 @@ restore "$APPDATA/user.ltx"
         echo "- game mode: $(tr -d '\r' < "$f" | grep -m1 '^\* Game mode: [a-z]*$' | sed 's/^\* Game mode: //')"
         echo "- lines starting with '!': $(grep -c '^!' "$f")"
         echo "- FATAL/stack trace: $(grep -ciE 'fatal error|stack trace' "$f")"
+        echo "- artefacts spawned by anomalies: $(grep -c '\] spawned artefact \[' "$f")"
         echo
         echo "Most frequent '!' lines:"
         echo

@@ -80,7 +80,8 @@ a config or a live script?
 |---|---|---|---|
 | `game_object:nearest_accessible_position()` | `xr_attendant` (follower scheme; Sarcofag, Selo, Dark Valley escort, Cit jail) | Yes | Shim (SoC only) |
 | `level.actor()` | `xr_rest` (`rest` scheme), `_g.get_actor_id` | Unknown: depends on gulag type `rest` in the spawn data | Shim (SoC only), call sites logged |
-| `cse_anomalous_zone.update`, `cse_zone_visual.update` | `se_zones` artefact respawn in anomalies | Yes, but never called | Not shimmed: zones aren't scheduled server objects in this engine, so `se_zone_anom:update()` never runs and artefacts don't respawn. Needs an ALife change, see open points |
+| `cse_anomalous_zone.update`, `cse_zone_visual.update` | `se_zones` periodic artefact respawn | No, also not in vanilla | None. The original 1.0006 `xrGame.dll` shows (RTTI) that anomalous zones aren't `CSE_ALifeSchedulable` and that `cse_anomalous_zone` exports no `update` callback, so `se_zone_anom:update()` never ran in the original game either. Vanilla only places artefacts in anomalies when a new game starts (`on_spawn`), which this engine does too (183 artefacts on a new game) |
+| `cse_anomalous_zone:spawn_artefacts()` | `se_zones` (only from the dead `update` path) | No in vanilla; mods may call it | Exported in SoC mode, as in the original DLL; ignored with a log line for online zones |
 | `actor_stats.add_to_ranking`, `remove_from_ranking` | `bind_stalker`, `se_stalker`, `xr_motivator` | Guarded with `~= nil` | Not needed: `CUISHoCRankingWnd` builds the list from the ALife registry |
 | `CHelicopter.eIdleState` etc., `CHelicopter:SetState` | `xr_heli` via `escape_heli` | No (`escape_heli` is never loaded; the live helicopter uses `heli_move`) | None |
 | `level.object()` | `_g.debug_get_level_object`, `script_object`, unregistered schemes | No | None |
@@ -105,7 +106,6 @@ Results are recorded in [shoc-smoke-test-log.md](shoc-smoke-test-log.md).
 
 ## Open points
 
-- Artefacts don't respawn in anomaly fields (zones aren't scheduled, see Script API).
 - Static analysis can't see calls built at runtime (`loadstring`, string-assembled
   names) or uses from spawn data; runtime shim logs cover only the shimmed functions.
 - The R4 renderer doesn't start with SoC data (#487).
