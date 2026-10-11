@@ -267,7 +267,8 @@ inline int strncpy_s(char * dest, size_t dst_size, const char * source, size_t n
     for(i = 0; i < end && source[i]; i++)
         dest[i] = source[i];
 
-    if(!source[i] || end == num)
+    // Check end == num first: source[num] may lie outside the source buffer
+    if(end == num || !source[i])
     {
         dest[i] = '\0';
         return 0;
