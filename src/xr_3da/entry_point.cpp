@@ -43,10 +43,25 @@ struct tracy_raii
     }
 };
 
+// True if the command line contains the option as a whole word
+// (a plain strstr("-nogame") would also match "-nogameintro")
+static bool has_option(pcstr commandLine, pcstr option)
+{
+    const size_t length = xr_strlen(option);
+    for (pcstr found = strstr(commandLine, option); found; found = strstr(found + 1, option))
+    {
+        const bool starts = found == commandLine || found[-1] == ' ';
+        const bool ends = found[length] == '\0' || found[length] == ' ';
+        if (starts && ends)
+            return true;
+    }
+    return false;
+}
+
 int entry_point(pcstr commandLine)
 {
     tracy_raii raii;
-    auto* game = strstr(commandLine, "-nogame") ? nullptr : xrGameModuleInstance();
+    auto* game = has_option(commandLine, "-nogame") ? nullptr : xrGameModuleInstance();
 
     CApplication app{ commandLine, game, s_render_modules };
 
