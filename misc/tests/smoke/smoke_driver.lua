@@ -6,7 +6,7 @@
 --
 -- Environment (set by run_smoke.sh):
 --   XRAY_SMOKE_DIR    directory for state.txt and results.txt
---   XRAY_SMOKE_PHASE  menu | play | load
+--   XRAY_SMOKE_PHASE  menu | play | load | dogs
 --
 -- Results are appended to results.txt as "PASS|FAIL <step> <details>".
 
@@ -225,11 +225,53 @@ local function load_steps()
     }
 end
 
+-- Let a dog pack run its group states (rest, idle animations) next to the actor.
+-- The AI ignores the actor and god mode is on, so the pack doesn't switch to combat.
+local function dogs_steps()
+    return {
+        wait(5000),
+        function()
+            console("ai_ignore_actor 1")
+            console("g_god 1")
+            local a = actor()
+            local best, best_dist
+            for id = 1, 65534 do
+                local obj = level.object_by_id(id)
+                if obj and obj:is_monster() and obj:alive() and string.find(obj:section(), "dog") then
+                    local dist = obj:position():distance_to(a:position())
+                    if not best or dist < best_dist then
+                        best, best_dist = obj, dist
+                    end
+                end
+            end
+            if not best then
+                report(false, "dogs_found", "no living dog online")
+                console("quit")
+                steps = {}
+                return true
+            end
+            local pos = best:position()
+            a:set_actor_position(vector():set(pos.x, pos.y + 5, pos.z))
+            report(true, "dogs_found", string.format("%s (%s), %.1f m away, actor moved next to it", best:name(),
+                best:section(), best_dist))
+            return true
+        end,
+        wait(90000),
+        function()
+            report(true, "dogs_observed", "90 s next to the pack without crash")
+            return true
+        end,
+        function() console("quit") return true end,
+    }
+end
+
 local function on_actor_bound()
     if phase == "play" then
         steps = play_steps()
     elseif phase == "load" then
         steps = load_steps()
+    elseif phase == "dogs" then
+        steps = dogs_steps()
     else
         return
     end

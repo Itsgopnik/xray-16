@@ -5,6 +5,7 @@
 #   menu  boot to the main menu, quit from the menu
 #   play  new game, kill the nearest enemy, save, load the save in-process, quit
 #   load  load the save from the command line (cold start), check the enemy is dead, quit
+#   dogs  (optional) new game, move next to a dog pack with the AI ignoring the actor, wait 90 s
 #
 # The engine is driven by smoke_driver.lua through -test_script (Debug/Mixed builds only).
 # Game data is not modified. The engine log, user.ltx and the smoke_test save are
@@ -147,6 +148,7 @@ for phase in $PHASES; do
         # -nogameintro: otherwise the opening cinematic runs (~200 s, game time paused)
         # unless some input happens to skip it, which made visible runs non-deterministic
         play) run_phase play -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
+        dogs) run_phase dogs -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
         load)
             if [ -f "$SAVES/smoke_test.sav" ]; then
                 run_phase load -start "server(smoke_test/single/alife/load)" "client(localhost)"
@@ -188,6 +190,7 @@ restore "$APPDATA/user.ltx"
         echo "- lines starting with '!': $(grep -c '^!' "$f")"
         echo "- FATAL/stack trace: $(grep -ciE 'fatal error|stack trace' "$f")"
         echo "- artefacts spawned by anomalies: $(grep -c '\] spawned artefact \[' "$f")"
+        echo "- dog animation fallbacks used: $(grep -c '^~ dog visual \[.*\] has no animation' "$f")"
         echo
         echo "Most frequent '!' lines:"
         echo
