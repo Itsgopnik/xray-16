@@ -6,6 +6,7 @@
 #   play  new game, kill the nearest enemy, save, load the save in-process, quit
 #   load  load the save from the command line (cold start), check the enemy is dead, quit
 #   dogs  (optional) new game, move next to a dog pack with the AI ignoring the actor, wait 90 s
+#   pda   (optional) new game, open the PDA map and tasks tabs, take a screenshot of each
 #
 # The engine is driven by smoke_driver.lua through -test_script (Debug/Mixed builds only).
 # Game data is not modified. The engine log, user.ltx and the smoke_test save are
@@ -89,9 +90,13 @@ fi
 : > "$OUT/results.txt"
 rm -f "$OUT/state.txt"
 
+SHOTS="$APPDATA/screenshots"
+
 run_phase() {
     local phase=$1; shift
     echo "=== phase $phase"
+    local shots_before
+    shots_before=$(ls "$SHOTS" 2>/dev/null)
     local start_ts=$SECONDS
     # -silent_error_mode: abort on fatal errors instead of waiting for a dialog click
     local cmd=(timeout -k 15 "$TIMEOUT" "${GDB[@]}" "$BIN/xr_3da" -nointro -silent_error_mode
@@ -129,6 +134,14 @@ run_phase() {
     pkill -KILL -f -- "-test_script $DRIVER" 2>/dev/null
     pkill -KILL -f -- "--socket xray-smoke-$$-$phase" 2>/dev/null
     echo "$phase rc=$rc duration=$((SECONDS - start_ts))s" >> "$OUT/exit_codes.txt"
+    # Move screenshots taken during this phase (only new ones) into the output directory
+    local shot
+    for shot in $(ls "$SHOTS" 2>/dev/null); do
+        if ! grep -qxF "$shot" <<< "$shots_before"; then
+            mkdir -p "$OUT/screenshots"
+            mv "$SHOTS/$shot" "$OUT/screenshots/$phase-$shot"
+        fi
+    done
     [ -f "$LOG" ] && cp "$LOG" "$OUT/$phase.engine.log"
     if [ $rc -eq 124 ] || [ $rc -eq 137 ]; then
         echo "FAIL $phase timed out after ${TIMEOUT}s" >> "$OUT/results.txt"
@@ -149,6 +162,7 @@ for phase in $PHASES; do
         # unless some input happens to skip it, which made visible runs non-deterministic
         play) run_phase play -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
         dogs) run_phase dogs -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
+        pda) run_phase pda -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
         load)
             if [ -f "$SAVES/smoke_test.sav" ]; then
                 run_phase load -start "server(smoke_test/single/alife/load)" "client(localhost)"

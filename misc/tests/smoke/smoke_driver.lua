@@ -6,7 +6,7 @@
 --
 -- Environment (set by run_smoke.sh):
 --   XRAY_SMOKE_DIR    directory for state.txt and results.txt
---   XRAY_SMOKE_PHASE  menu | play | load | dogs
+--   XRAY_SMOKE_PHASE  menu | play | load | dogs | pda
 --
 -- Results are appended to results.txt as "PASS|FAIL <step> <details>".
 
@@ -265,6 +265,30 @@ local function dogs_steps()
     }
 end
 
+-- Open the PDA on the map and tasks tabs and take a screenshot of each
+local function pda_steps()
+    local pda
+    local function show_tab(section)
+        return function()
+            pda = pda or ActorMenu.get_pda_menu()
+            if not pda:IsShown() then
+                pda:ShowDialog(true)
+            end
+            pda:SetActiveSubdialog(section)
+            local active = pda:GetActiveSection()
+            report(active == section, "pda_tab_" .. section, "active section: " .. tostring(active))
+            return true
+        end
+    end
+    local function shot() console("screenshot") return true end
+    return {
+        wait(8000),
+        show_tab("eptMap"), wait(3000), shot, wait(2000),
+        show_tab("eptTasks"), wait(3000), shot, wait(2000),
+        function() pda:HideDialog() console("quit") return true end,
+    }
+end
+
 local function on_actor_bound()
     if phase == "play" then
         steps = play_steps()
@@ -272,6 +296,8 @@ local function on_actor_bound()
         steps = load_steps()
     elseif phase == "dogs" then
         steps = dogs_steps()
+    elseif phase == "pda" then
+        steps = pda_steps()
     else
         return
     end
