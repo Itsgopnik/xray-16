@@ -47,8 +47,13 @@ void CPhysicItem::OnH_B_Independent(bool just_before_destroy)
 {
     inherited::OnH_B_Independent(just_before_destroy);
 
-    if (m_ready_to_destroy)
-        return;
+    if (m_ready_to_destroy || just_before_destroy)
+    {
+        // No own shell: the parent must drop its collision copy of this item
+        notify_parent_leave_without_shell();
+        if (m_ready_to_destroy)
+            return;
+    }
 
     setVisible(TRUE);
     setEnabled(TRUE);

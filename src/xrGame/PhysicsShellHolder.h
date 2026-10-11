@@ -101,6 +101,8 @@ public:
 protected:
     virtual bool has_shell_collision_place(const CPhysicsShellHolder* obj) const;
     virtual void on_child_shell_activate(CPhysicsShellHolder* obj);
+    virtual void on_child_leave_without_shell(CPhysicsShellHolder* obj);
+    void notify_parent_leave_without_shell();
 
 public:
     virtual bool register_schedule() const;

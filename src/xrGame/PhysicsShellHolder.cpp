@@ -154,6 +154,16 @@ void CPhysicsShellHolder::on_child_shell_activate(CPhysicsShellHolder* obj)
     if (character_physics_support())
         character_physics_support()->on_child_shell_activate(obj);
 }
+void CPhysicsShellHolder::on_child_leave_without_shell(CPhysicsShellHolder* obj)
+{
+    if (character_physics_support())
+        character_physics_support()->on_child_leave_without_shell(obj);
+}
+void CPhysicsShellHolder::notify_parent_leave_without_shell()
+{
+    if (CPhysicsShellHolder* parent = smart_cast<CPhysicsShellHolder*>(H_Parent()))
+        parent->on_child_leave_without_shell(this);
+}
 
 void CPhysicsShellHolder::correct_spawn_pos()
 {

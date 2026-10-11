@@ -851,6 +851,17 @@ void CCharacterPhysicsSupport::on_child_shell_activate(CPhysicsShellHolder* obj)
     // DBG_ClosedCashedDraw( 50000 );
 }
 
+// The active item left the ragdoll without creating its own physics shell (dropped just
+// before destroy, or taken into another inventory). The weapon geoms copied onto the hand
+// bone still reference the item as their physics ref object; once the item is deleted that
+// pointer dangles and the next collision damage check on them crashes.
+void CCharacterPhysicsSupport::on_child_leave_without_shell(CPhysicsShellHolder* obj)
+{
+    if (!has_shell_collision_place(obj))
+        return;
+    DestroyActiveWeaponCollision();
+}
+
 void CCharacterPhysicsSupport::RemoveActiveWeaponCollision()
 {
     VERIFY(m_pPhysicsShell);
@@ -873,17 +884,6 @@ void CCharacterPhysicsSupport::RemoveActiveWeaponCollision()
     Fmatrix m0e = Fmatrix().mul_43(m0, m1_to_e);
     root->SetTransform(m0e, mh_unspecified);
 
-    for (; ii != ee; ++ii)
-    {
-        CODEGeom* g = (*ii);
-
-        // g->dbg_draw( 0.01f, color_xrgb( 0, 0, 255 ), Flags32() );
-
-        m_weapon_attach_bone->remove_geom(g);
-        g->destroy();
-        xr_delete(g);
-    }
-
     // m_active_item_obj->PPhysicsShell()->dbg_draw_geometry( 0.2f, color_xrgb( 255, 0, 100 ) );
 
     Fvector a_vel, l_vel;
@@ -894,6 +894,20 @@ void CCharacterPhysicsSupport::RemoveActiveWeaponCollision()
 
     root->set_AngularVel(a_vel);
     root->set_LinearVel(l_vel);
+
+    DestroyActiveWeaponCollision();
+}
+
+void CCharacterPhysicsSupport::DestroyActiveWeaponCollision()
+{
+    VERIFY(m_weapon_attach_bone);
+    for (CODEGeom* g : m_weapon_geoms)
+    {
+        // g->dbg_draw( 0.01f, color_xrgb( 0, 0, 255 ), Flags32() );
+        m_weapon_attach_bone->remove_geom(g);
+        g->destroy();
+        xr_delete(g);
+    }
 
     m_weapon_geoms.clear();
     m_weapon_attach_bone = 0;
