@@ -48,6 +48,13 @@ constexpr SDL_MessageBoxButtonData buttons[] =
          (int)AssertionResult::abort, "Cancel" }
 };
 
+// Unattended runs (tests, CI): no dialogs, window or clipboard changes. Those SDL calls
+// also aren't safe from worker threads, where a fatal error can happen too.
+static bool silent_error_mode()
+{
+    return Core.Params && strstr(Core.Params, "-silent_error_mode");
+}
+
 AssertionResult xrDebug::ShowMessage(pcstr title, pcstr message, bool simpleMode)
 {
 #ifdef XR_PLATFORM_WINDOWS // because Windows default Message box is fancy
@@ -73,7 +80,7 @@ AssertionResult xrDebug::ShowMessage(pcstr title, pcstr message, bool simpleMode
     }
 #else
     // Unattended runs (tests, CI): nobody can click a dialog, so abort right away
-    if (Core.Params && strstr(Core.Params, "-silent_error_mode"))
+    if (silent_error_mode())
         return simpleMode ? AssertionResult::ok : AssertionResult::abort;
 
     if (simpleMode)
@@ -214,7 +221,8 @@ void xrDebug::GatherInfo(char* assertionInfo, size_t bufferSize, const ErrorLoca
     }
 
     FlushLog();
-    os_clipboard::copy_to_clipboard(assertionInfo);
+    if (!silent_error_mode())
+        os_clipboard::copy_to_clipboard(assertionInfo);
 }
 
 void xrDebug::Fatal(const ErrorLocation& loc, const char* format, ...)
@@ -239,7 +247,7 @@ AssertionResult xrDebug::Fail(bool& ignoreAlways, const ErrorLocation& loc, cons
 {
     ScopeLock lock(&failLock);
 
-    if (windowHandler)
+    if (windowHandler && !silent_error_mode())
         windowHandler->OnErrorDialog(true); // Call it only after locking so that multiple threads won't call this function simultaneously.
 
     ErrorAfterDialog = true;
@@ -291,7 +299,7 @@ AssertionResult xrDebug::Fail(bool& ignoreAlways, const ErrorLocation& loc, cons
 #endif
             // calling DEBUG_BREAK with no debugger will trigger BugTrap
             // we must hide the window
-            if (windowHandler && !DebuggerIsPresent())
+            if (windowHandler && !DebuggerIsPresent() && !silent_error_mode())
                 windowHandler->OnFatalError();
             DEBUG_BREAK;
         } // switch (result)
