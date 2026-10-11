@@ -3,6 +3,17 @@
 
 namespace xray::render::RENDER_NAMESPACE
 {
+namespace
+{
+// Old-game archives (SoC, possibly CS) don't carry the CoP water textures;
+// water_normal (with .seq animation) exists in every game.
+pcstr water_texture(pcstr preferred)
+{
+    string_path fn;
+    return FS.exist(fn, "$game_textures$", preferred, ".dds") ? preferred : "water\\water_normal";
+}
+} // namespace
+
 void CBlender_rain::Compile(CBlender_Compile& C)
 {
     IBlender::Compile(C);
@@ -68,9 +79,8 @@ void CBlender_rain::Compile(CBlender_Compile& C)
         // C.r_dx11Texture		("s_water",	"water\\water_studen");
         // C.r_dx11Texture		("s_water",	"water\\water_normal");
 
-        C.r_dx11Texture("s_water", "water\\water_SBumpVolume");
-        // C.r_dx11Texture		("s_waterFall",	"water\\water_normal");
-        C.r_dx11Texture("s_waterFall", "water\\water_flowing_nmap");
+        C.r_dx11Texture("s_water", water_texture("water\\water_SBumpVolume"));
+        C.r_dx11Texture("s_waterFall", water_texture("water\\water_flowing_nmap"));
 
         C.r_End();
 
@@ -191,9 +201,8 @@ void CBlender_rain_msaa::Compile(CBlender_Compile& C)
         // C.r_dx11Texture		("s_water",	"water\\water_studen");
         // C.r_dx11Texture		("s_water",	"water\\water_normal");
 
-        C.r_dx11Texture("s_water", "water\\water_SBumpVolume");
-        // C.r_dx11Texture		("s_waterFall",	"water\\water_normal");
-        C.r_dx11Texture("s_waterFall", "water\\water_flowing_nmap");
+        C.r_dx11Texture("s_water", water_texture("water\\water_SBumpVolume"));
+        C.r_dx11Texture("s_waterFall", water_texture("water\\water_flowing_nmap"));
 
         C.r_End();
 

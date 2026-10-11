@@ -105,7 +105,9 @@ void CResourceManager::OnDeviceCreate(IReader* F)
             if (IBlender* B = IBlender::Create(desc.CLS))
             {
 #ifndef MASTER_GOLD
-                if (B->getDescription().version != desc.version)
+                // Old-game shader libraries are compiled with older SDKs —
+                // version mismatches are expected there; the library version is used.
+                if (B->getDescription().version != desc.version && !ShadowOfChernobylMode && !ClearSkyMode)
                 {
                     Msg("! Version conflict in shader '%s'", desc.cName);
                 }
@@ -121,7 +123,10 @@ void CResourceManager::OnDeviceCreate(IReader* F)
 #ifndef MASTER_GOLD
             else
             {
-                Msg("! Renderer doesn't support blender '%s'", desc.cName);
+                // R1 fixed-pipeline blenders aren't supported by R2/R3+ renderers;
+                // old-game content never uses them under modern renderers.
+                if (!ShadowOfChernobylMode && !ClearSkyMode)
+                    Msg("! Renderer doesn't support blender '%s'", desc.cName);
             }
 #endif
             chunk->close();
