@@ -393,6 +393,11 @@ void UICore::ReadTextureInfo()
             { "ui\\ui_scb_scroll_box_v", "ui_scroll_box_back"   },
             { "ui\\ui_scb_scroll_box_v", "ui_scroll_box_b"      },
             { "ui\\ui_scb_scroll_box_v", "ui_scroll_box_e"      },
+            // 3tButton derives _e/_d/_t/_h state names from the base <texture>
+            // value (CUIFixedScrollBar box) — register the missing states too
+            { "ui\\ui_scb_scroll_box_v", "ui_scroll_box_d"      },
+            { "ui\\ui_scb_scroll_box_v", "ui_scroll_box_t"      },
+            { "ui\\ui_scb_scroll_box_v", "ui_scroll_box_h"      },
             { "ui\\ui_scb_back",          "ui_scroll_back_hor_back" },
             { "ui\\ui_scb_back",          "ui_scroll_back_hor_b"    },
             { "ui\\ui_scb_back",          "ui_scroll_back_hor_e"    },
@@ -439,6 +444,18 @@ void UICore::ReadTextureInfo()
 
             // Map markers — reuse SHoC PDA news/mission icons as visual stand-ins
             { "ui\\ui_pda_icon_news_jobs",          "ui_pda2_trader"          },
+
+            // Level maps referenced from SoC level.ltx [level_map] (ui\ui_map_* ids).
+            // SoC archives only carry textures\map\map_*.dds; Yantar's level.ltx
+            // even points at ui\ui_map_mp_factory (GSC copy-paste from testers_mp_factory).
+            { "map\\map_escape",   "ui\\ui_map_escape"     },
+            { "map\\map_yantar",   "ui\\ui_map_mp_factory" },
+
+            // SoC's own pda_events.xml (archive) references the frame background
+            // by its plain name. The plain ui_pda_frame_sub.dds doesn't pass the DDS
+            // header check (and never loaded as a texture) — point the plain id at
+            // the valid _back middle-part DDS instead.
+            { "ui\\ui_pda_frame_sub_back", "ui_pda_frame_sub" },
             { "ui\\ui_pda_icon_news_jobs",          "ui_pda2_guide"           },
             { "ui\\ui_pda_icon_news_jobs",          "ui_pda2_mechanic"        },
             { "ui\\ui_pda_icon_mission_in_progress","ui_pda2_secondary_task"  },
@@ -490,6 +507,14 @@ void UICore::ReadTextureInfo()
             rect.set(h.x, h.y, h.x + h.w, h.y + h.h);
             CUITextureMaster::RegisterTexture(h.id, "ui\\ui_hud", rect);
         }
+
+        // SoC's ui_mm_opt.xml references the caption divider by its plain name
+        // (ui_brokenline); SoC's ui_common.xml only defines the _b/_back/_e parts.
+        // Register the plain id as the sub-rect strip from ui\ui_common.dds
+        // (coords from SoC's own ui_common.xml definition).
+        Frect brokenline_rect;
+        brokenline_rect.set(55.0f, 0.0f, 87.0f, 21.0f);
+        CUITextureMaster::RegisterTexture("ui_brokenline", "ui\\ui_common", brokenline_rect);
 
         // Button stubs — copy atlas rects from existing SHoC button definitions to the
         // CoP-specific IDs that don't exist in SHoC. State suffix (e/d/t/h) is preserved.

@@ -97,8 +97,17 @@ void CUISHoCDiaryWnd::FillList()
             InventoryUtilities::GetDateAsString(n.receive_time, InventoryUtilities::edpDateToDay);
 
         LPCSTR caption = n.news_caption.c_str();
+        LPCSTR body = n.news_text.c_str();
+
+        // SoC scripts call give_game_news() with the whole pre-colored message
+        // (with %c[..] and \n markup) as the caption parameter and leave the text
+        // empty. Route those through the parsed body path — rendering them in the
+        // plain gold header showed the raw markup untranslated.
+        const bool soc_bodyless = !(body && xr_strlen(body)) && caption && xr_strlen(caption);
+        LPCSTR message = soc_bodyless ? caption : body;
+
         xr_string header = date_str.c_str();
-        if (caption && xr_strlen(caption))
+        if (!soc_bodyless && caption && xr_strlen(caption))
         {
             header += "  ";
             header += StringTable().translate(caption).c_str();
@@ -111,15 +120,14 @@ void CUISHoCDiaryWnd::FillList()
         cap->TextItemControl()->SetText(header.c_str());
         m_view->AddWindow(cap, true);
 
-        LPCSTR body = n.news_text.c_str();
-        if (body && xr_strlen(body))
+        if (message && xr_strlen(message))
         {
             CUIStatic* txt = xr_new<CUIStatic>("DiaryText");
             txt->SetWndPos({ 0.0f, 0.0f });
             txt->SetWndSize({ kViewW - 20.0f, 20.0f });
             txt->SetTextColor(kColorText);
             txt->SetTextComplexMode(true);
-            txt->TextItemControl()->SetText(StringTable().translate(body).c_str());
+            txt->TextItemControl()->SetText(StringTable().translate(message).c_str());
             txt->AdjustHeightToText();
             m_view->AddWindow(txt, true);
         }

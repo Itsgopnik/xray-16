@@ -103,7 +103,9 @@ bool CUITaskWnd::Init()
 
     m_pMapWnd->AttachChild(m_task_wnd);
     m_task_wnd->SetMessageTarget(this);
-    m_task_wnd->Show(false);
+    // In SoC the task list is a permanent part of the tasks tab (left column);
+    // in CoP it stays a popup toggled by btn_second_task.
+    m_task_wnd->Show(ShadowOfChernobylMode);
 
     m_map_legend_wnd = xr_new<UIMapLegend>();
     m_map_legend_wnd->SetAutoDelete(true);

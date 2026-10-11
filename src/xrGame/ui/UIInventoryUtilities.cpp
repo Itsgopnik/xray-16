@@ -308,6 +308,27 @@ shared_str InventoryUtilities::GetDateAsString(ALife::_TIME_ID time, EDatePrecis
     VERIFY(1 <= month && month <= 12);
     LPCSTR month_str = StringTable().translate(st_months[month - 1]).c_str();
 
+    // Old-game string tables (and some mods) lack the month_january..month_december
+    // keys; StringTable::translate() then returns the key itself (identity fallback).
+    // Use the numeric month instead of rendering raw keys like "month_may".
+    const shared_str month_key = st_months[month - 1];
+    if (month_str == month_key.c_str())
+    {
+        if (!numericMonth)
+            numericMonth = true;
+        if (datePrec == edpDateToMonth || datePrec == edpDateToDay)
+        {
+            // Report once — the active string table is global and this function
+            // is called frequently (diary refresh).
+            static bool monthFallbackReported = false;
+            if (!monthFallbackReported)
+            {
+                monthFallbackReported = true;
+                Msg("~ [compat] month key [%s] not translated — using numeric date", month_key.c_str());
+            }
+        }
+    }
+
     // Date
     switch (datePrec)
     {
@@ -528,6 +549,12 @@ LPCSTR InventoryUtilities::GetGoodwillAsText(CHARACTER_GOODWILL goodwill)
 void InventoryUtilities::SendInfoToActor(LPCSTR info_id)
 {
     if (GameID() != eGameIDSingle)
+        return;
+
+    // Engine UI extensions (ept* tab ids, ui_talk_show, ...) are absent in SoC
+    // data — only forward info portions the game actually defines. CoP doesn't
+    // declare info portions at all, so this check must stay SoC-only.
+    if (ShadowOfChernobylMode && !CInfoPortion::GetById(info_id, true))
         return;
 
     CActor* actor = smart_cast<CActor*>(Level().CurrentEntity());

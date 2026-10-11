@@ -105,10 +105,8 @@ void CUIPdaWnd::Init()
     m_caption = UIHelper::CreateStatic(uiXml, "caption_static", this, false);
     m_caption_const = m_caption ? m_caption->GetText() : "";
 
-    // Main buttons background
-    CUIWindow* buttons_background = this;
-    if (UIHelper::CreateFrameLine(uiXml, "mbbackground_frame_line", UIMainPdaFrame, false))
-        buttons_background = UIMainPdaFrame; // SOC
+    // Main buttons background (visual strip under the tab bar)
+    std::ignore = UIHelper::CreateFrameLine(uiXml, "mbbackground_frame_line", UIMainPdaFrame, false);
 
     // Timer background
     m_clock = UIHelper::CreateStatic(uiXml, "clock_wnd", this, false);
@@ -169,14 +167,9 @@ void CUIPdaWnd::Init()
 
         if (ShadowOfChernobylMode)
         {
-            // Use the CoP task window (with the embedded mini-map, task focus button
-            // and zoom controls) laid out by the deployed ui_style_shoc/pda_tasks.xml.
-            // It matches the original SoC tasks tab (list left, map/description right).
-            // The custom CUISHoCTaskWnd is kept as a fallback.
-            pUITaskWnd = xr_new<CUITaskWnd>(m_hint_wnd);
-            if (!pUITaskWnd->Init())
-                xr_delete(pUITaskWnd);
-
+            // Use the custom SHoC task window (list left, description right,
+            // layout close to the original SoC tasks tab). The CoP CUITaskWnd
+            // (embedded map, focus buttons) is NOT used in SHoC mode.
             pUISHoCTaskWnd = xr_new<CUISHoCTaskWnd>(m_hint_wnd);
             if (!pUISHoCTaskWnd->Init())
                 xr_delete(pUISHoCTaskWnd);
@@ -223,7 +216,7 @@ void CUIPdaWnd::Init()
 
     UITabControl = xr_new<CUITabControl>();
     UITabControl->SetAutoDelete(true);
-    buttons_background->AttachChild(UITabControl);
+    AttachChild(UITabControl);
     CUIXmlInit::InitTabControl(uiXml, "tab", 0, UITabControl, true, ShadowOfChernobylMode);
     UITabControl->SetMessageTarget(this);
     UITabControl->SetAcceleratorsMode(true);
@@ -232,9 +225,9 @@ void CUIPdaWnd::Init()
     {
         {"0", "eptTasks"},
         {"1", "eptMap"},
-        {"2", "eptDiary"},
+        {"2", "eptLogs"},
         {"3", "eptContacts"},
-        {"4", "eptStalkersRanking"},
+        {"4", "eptRanking"},
         {"5", "eptStatistics"},
         {"6", "eptEncyclopedia"},
     };
@@ -362,15 +355,12 @@ void CUIPdaWnd::SetActiveSubdialog(const shared_str& section)
     const std::tuple<shared_str, pcstr, CUIWindow*> availableWindowsList[] =
     {
         { "eptMap",             nullptr, pUIMapWnd },
-        { "eptTasks",           nullptr, pUITaskWnd ? pUITaskWnd : static_cast<CUIWindow*>(pUISHoCTaskWnd) },
+        { "eptTasks",           nullptr, ShadowOfChernobylMode ? static_cast<CUIWindow*>(pUISHoCTaskWnd)     : static_cast<CUIWindow*>(pUITaskWnd) },
         { "eptFractionWar",     nullptr, pUIFactionWarWnd },
         { "eptStatistics",      "ui_pda_actor_info", pUIActorInfo },
-        { "eptRanking",         nullptr, pUIRankingWnd },
-        { "eptLogs",            nullptr, pUILogsWnd },
-        // SOC tabs
-        { "eptDiary",           nullptr, pUISHoCDiaryWnd },
-        { "eptContacts",        nullptr, pUISHoCContactsWnd },
-        { "eptStalkersRanking", nullptr, pUISHoCRankingWnd },
+        { "eptRanking",         nullptr, ShadowOfChernobylMode ? static_cast<CUIWindow*>(pUISHoCRankingWnd)  : static_cast<CUIWindow*>(pUIRankingWnd) },
+        { "eptLogs",            nullptr, ShadowOfChernobylMode ? static_cast<CUIWindow*>(pUISHoCDiaryWnd)   : static_cast<CUIWindow*>(pUILogsWnd) },
+        { "eptContacts",        nullptr, ShadowOfChernobylMode ? static_cast<CUIWindow*>(pUISHoCContactsWnd) : nullptr },
         { "eptEncyclopedia",    nullptr, pUIEncyclopediaWnd },
     };
 
