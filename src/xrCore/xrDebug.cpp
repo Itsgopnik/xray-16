@@ -616,6 +616,9 @@ static void handler_base(const char* reason)
 {
     bool ignoreAlways = false;
     xrDebug::Fail(ignoreAlways, DEBUG_INFO, nullptr, reason, nullptr, nullptr);
+    // Fail() can return (dialog interrupted, "Continue" pressed). Continuing after a
+    // fatal signal only runs on in an invalid state (e.g. behind a failed assert).
+    std::_Exit(3);
 }
 
 #if defined(XR_PLATFORM_WINDOWS)
