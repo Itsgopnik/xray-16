@@ -19,7 +19,8 @@ end
 local SAVE_NAME = "smoke_test"
 
 local function say(text)
-    (log1 or log)("[smoke] " .. text)
+    -- wall clock and game clock, to tell slow frames from slow game time
+    (log1 or log)(string.format("[smoke t=%d gt=%d] %s", os.time(), time_global() / 1000, text))
     flush()
 end
 

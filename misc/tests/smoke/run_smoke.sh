@@ -13,6 +13,8 @@
 # Usage: run_smoke.sh --game <dir with fsgame.ltx> --bin <dir with xr_3da>
 #                     [--out <dir>] [--timeout <seconds per phase>] [--phases "menu play load"]
 #                     [--gdb]  (run the engine under gdb; backtrace of a crash goes to <phase>.stdout.log)
+#                     [--headless]  (run inside an invisible kwin_wayland --virtual session with Xwayland
+#                                    and a private D-Bus: no window, no focus stealing, no stray input)
 #                     [-- <extra engine arguments, e.g. -soc or -r4>]
 
 set -u
@@ -23,6 +25,7 @@ OUT=""
 TIMEOUT=300
 PHASES="menu play load"
 GDB=()
+HEADLESS=0
 while [ $# -gt 0 ] && [ "$1" != "--" ]; do
     case "$1" in
         --game) GAME=$2; shift ;;
@@ -30,7 +33,8 @@ while [ $# -gt 0 ] && [ "$1" != "--" ]; do
         --out) OUT=$2; shift ;;
         --timeout) TIMEOUT=$2; shift ;;
         --phases) PHASES=$2; shift ;;
-        --gdb) GDB=(gdb -q -batch -ex run -ex "thread apply all bt" -ex "bt full" --args) ;;
+        --gdb) GDB=(gdb -q -batch -return-child-result -ex run -ex "thread apply all bt" -ex "bt full" --args) ;;
+        --headless) HEADLESS=1 ;;
         -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option $1" >&2; exit 2 ;;
     esac
@@ -59,6 +63,12 @@ restore() { [ -f "$OUT/backup_$(basename "$1")" ] && cp -p "$OUT/backup_$(basena
 backup "$LOG"
 backup "$APPDATA/user.ltx"
 rm -f "$SAVES"/smoke_test.*
+if [ "$HEADLESS" -eq 1 ] && [ -f "$APPDATA/user.ltx" ]; then
+    # The window in the virtual session never gets input focus; without this the
+    # engine pauses the level at start ("application start") and idles while
+    # inactive. user.ltx is restored at the end.
+    printf '\nrs_always_active on\n' >> "$APPDATA/user.ltx"
+fi
 : > "$OUT/results.txt"
 rm -f "$OUT/state.txt"
 
@@ -66,14 +76,37 @@ run_phase() {
     local phase=$1; shift
     echo "=== phase $phase"
     local start_ts=$SECONDS
-    (
-        cd "$GAME" || exit 1
-        export LD_LIBRARY_PATH="$BIN${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-        export XRAY_SMOKE_DIR="$OUT" XRAY_SMOKE_PHASE="$phase"
-        exec timeout -k 15 "$TIMEOUT" "${GDB[@]}" "$BIN/xr_3da" -nointro -fsltx "$GAME/fsgame.ltx" \
-            -test_script "$DRIVER" "${EXTRA[@]}" "$@"
-    ) > "$OUT/$phase.stdout.log" 2>&1
+    # -silent_error_mode: abort on fatal errors instead of waiting for a dialog click
+    local cmd=(timeout -k 15 "$TIMEOUT" "${GDB[@]}" "$BIN/xr_3da" -nointro -silent_error_mode
+        -fsltx "$GAME/fsgame.ltx" -test_script "$DRIVER" "${EXTRA[@]}" "$@")
+    if [ "$HEADLESS" -eq 1 ]; then
+        # kwin_wayland takes a single session program: write one that runs the engine
+        local session="$OUT/$phase.session.sh"
+        {
+            echo "#!/usr/bin/env bash"
+            printf 'cd %q || exit 1\n' "$GAME"
+            printf 'export LD_LIBRARY_PATH=%q XRAY_SMOKE_DIR=%q XRAY_SMOKE_PHASE=%q\n' \
+                "$BIN${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$OUT" "$phase"
+            printf '%q ' "${cmd[@]}"
+            echo
+        } > "$session"
+        chmod +x "$session"
+        env -u WAYLAND_DISPLAY -u DISPLAY timeout -k 15 $((TIMEOUT + 60)) \
+            dbus-run-session -- kwin_wayland --virtual --xwayland --no-lockscreen --no-global-shortcuts \
+            --socket "xray-smoke-$$-$phase" --width 1280 --height 720 --exit-with-session "$session" \
+            > "$OUT/$phase.stdout.log" 2>&1
+    else
+        (
+            cd "$GAME" || exit 1
+            export LD_LIBRARY_PATH="$BIN${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            export XRAY_SMOKE_DIR="$OUT" XRAY_SMOKE_PHASE="$phase"
+            exec "${cmd[@]}"
+        ) > "$OUT/$phase.stdout.log" 2>&1
+    fi
     local rc=$?
+    # timeout only signals its direct child (gdb, kwin): don't leave engines behind
+    pkill -KILL -f -- "-test_script $DRIVER" 2>/dev/null
+    pkill -KILL -f -- "--socket xray-smoke-$$-$phase" 2>/dev/null
     echo "$phase rc=$rc duration=$((SECONDS - start_ts))s" >> "$OUT/exit_codes.txt"
     [ -f "$LOG" ] && cp "$LOG" "$OUT/$phase.engine.log"
     if [ $rc -eq 124 ] || [ $rc -eq 137 ]; then
@@ -91,7 +124,9 @@ run_phase() {
 for phase in $PHASES; do
     case "$phase" in
         menu) run_phase menu ;;
-        play) run_phase play -start "server(all/single/alife/new)" "client(localhost)" ;;
+        # -nogameintro: otherwise the opening cinematic runs (~200 s, game time paused)
+        # unless some input happens to skip it, which made visible runs non-deterministic
+        play) run_phase play -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
         load)
             if [ -f "$SAVES/smoke_test.sav" ]; then
                 run_phase load -start "server(smoke_test/single/alife/load)" "client(localhost)"
