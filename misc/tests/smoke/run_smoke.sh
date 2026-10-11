@@ -13,6 +13,7 @@
 # Usage: run_smoke.sh --game <dir with fsgame.ltx> --bin <dir with xr_3da>
 #                     [--out <dir>] [--timeout <seconds per phase>] [--phases "menu play load"]
 #                     [--gdb]  (run the engine under gdb; backtrace of a crash goes to <phase>.stdout.log)
+#                     [--gdb-ex <command>]  (extra gdb command after a crash, repeatable; implies --gdb)
 #                     [--headless]  (run inside an invisible kwin_wayland --virtual session with Xwayland
 #                                    and a private D-Bus: no window, no focus stealing, no stray input)
 #                     [-- <extra engine arguments, e.g. -soc or -r4>]
@@ -25,6 +26,7 @@ OUT=""
 TIMEOUT=300
 PHASES="menu play load"
 GDB=()
+GDB_EX=()
 HEADLESS=0
 while [ $# -gt 0 ] && [ "$1" != "--" ]; do
     case "$1" in
@@ -33,15 +35,29 @@ while [ $# -gt 0 ] && [ "$1" != "--" ]; do
         --out) OUT=$2; shift ;;
         --timeout) TIMEOUT=$2; shift ;;
         --phases) PHASES=$2; shift ;;
-        --gdb) GDB=(gdb -q -batch -return-child-result -ex run -ex "thread apply all bt" -ex "bt full" --args) ;;
+        --gdb) GDB=(gdb) ;;
+        --gdb-ex) GDB=(gdb); GDB_EX+=("$2"); shift ;;
         --headless) HEADLESS=1 ;;
-        -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option $1" >&2; exit 2 ;;
     esac
     shift
 done
 [ "${1:-}" = "--" ] && shift
 EXTRA=("$@")
+GDB_SCRIPT=()
+if [ ${#GDB_EX[@]} -gt 0 ]; then
+    # Extra commands run in hook-stop, i.e. only when the engine stops on a crash;
+    # after a normal exit they would fail and turn gdb's exit code into 1.
+    mkdir -p "${OUT:-/tmp}"
+    gdb_cmds=$(mktemp /tmp/run_smoke_gdb.XXXXXX)
+    { echo "define hook-stop"; printf '%s\n' "${GDB_EX[@]}"; echo "end"; } > "$gdb_cmds"
+    GDB_SCRIPT=(-x "$gdb_cmds")
+fi
+if [ ${#GDB[@]} -gt 0 ]; then
+    # 'thread apply all' doesn't fail after a normal exit, so the child's exit code survives
+    GDB=(gdb -q -batch -return-child-result "${GDB_SCRIPT[@]}" -ex run -ex "thread apply all bt full" --args)
+fi
 
 [ -f "$GAME/fsgame.ltx" ] || { echo "No fsgame.ltx in --game '$GAME'" >&2; exit 2; }
 [ -x "$BIN/xr_3da" ] || { echo "No xr_3da in --bin '$BIN'" >&2; exit 2; }
