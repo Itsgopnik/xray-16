@@ -598,17 +598,21 @@ LONG WINAPI xrDebug::UnhandledFilter(EXCEPTION_POINTERS* exPtrs)
 [[noreturn]]
 void xr_terminate()
 {
+    // std::_Exit instead of exit(): running static destructors on the broken state
+    // after std::terminate only produces follow-up failures (e.g. SFillPropData's
+    // VERIFY(0 == counter) with server objects still alive).
 #if defined(XR_PLATFORM_WINDOWS)
     if (strstr(GetCommandLine(), "-silent_error_mode"))
-        exit(-1);
+        std::_Exit(-1);
 #endif
     //ScopeLock lock(&failLock);
 
     string4096 assertionInfo;
     xrDebug::GatherInfo(assertionInfo,sizeof(assertionInfo), DEBUG_INFO, nullptr, "Unexpected application termination");
     xr_strcat(assertionInfo, "Press OK to abort execution\r\n");
+    FlushLog();
     xrDebug::ShowMessage("Fatal Error", assertionInfo);
-    exit(-1);
+    std::_Exit(-1);
 }
 #endif // USE_BUG_TRAP
 
