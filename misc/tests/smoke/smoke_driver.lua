@@ -281,7 +281,12 @@ local function pda_steps()
         end
     end
     local function shot() console("screenshot") return true end
-    local result = { wait(8000) }
+    -- SoC news icon: texture file plus rect (x, y, width, height), shown on the HUD
+    local function news()
+        db.actor:give_game_news("smoke test news", "ui\\ui_iconsTotal", Frect():set(0, 658, 83, 47), 0, 10000)
+        return true
+    end
+    local result = { wait(8000), news, wait(1500), shot, wait(1000) }
     for _, section in ipairs({ "eptTasks", "eptMap", "eptLogs", "eptContacts", "eptRanking",
                                "eptStatistics", "eptEncyclopedia" }) do
         table.insert(result, show_tab(section))

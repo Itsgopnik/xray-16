@@ -24,3 +24,11 @@ struct GAME_NEWS_DATA : public ISerializable
 };
 
 using GAME_NEWS_VECTOR = xr_vector<GAME_NEWS_DATA>;
+
+class CUIStatic;
+
+// SoC gives news icons as a texture file plus a rect (x, y, width, height). The rect travels in
+// the texture name ("file|x,y,w,h"), so the news registry and its save format stay unchanged.
+shared_str shoc_news_texture(pcstr texture, const Frect& rect);
+// Inits a news icon, applying a rect embedded by shoc_news_texture()
+void init_news_icon(CUIStatic& icon, const shared_str& texture);

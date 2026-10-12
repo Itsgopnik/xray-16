@@ -283,7 +283,7 @@ void CUITalkDialogWnd::AddIconedAnswer(pcstr text, pcstr texture_name, Frect tex
     news_data.news_text = "";
 
     news_data.m_type = GAME_NEWS_DATA::eTalk;
-    news_data.texture_name = texture_name;
+    news_data.texture_name = ShadowOfChernobylMode ? shoc_news_texture(texture_name, texture_rect) : texture_name;
     news_data.receive_time = Level().GetGameTime();
 
     Actor()->game_news_registry->registry().objects().emplace_back(std::move(news_data));
@@ -520,7 +520,10 @@ void CUIAnswerItemIconed::Init(pcstr text, pcstr texture_name, Frect texture_rec
 {
     inherited::Init(text, "");
     m_icon->InitTexture(texture_name);
-    m_icon->SetTextureRect(texture_rect);
+    if (ShadowOfChernobylMode) // x, y, width, height
+        m_icon->SetTextureRect({ texture_rect.x1, texture_rect.y1, texture_rect.x1 + texture_rect.x2, texture_rect.y1 + texture_rect.y2 });
+    else
+        m_icon->SetTextureRect(texture_rect);
     m_icon->TextureOn();
     m_icon->SetStretchTexture(true);
 }

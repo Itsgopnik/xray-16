@@ -56,7 +56,7 @@ void CUINewsItemWnd::Setup(GAME_NEWS_DATA& news_data)
     m_UIText->AdjustHeightToText();
     float h1 = m_UIText->GetWndPos().y + m_UIText->GetHeight() + 6.0f;
 
-    m_UIImage->InitTexture(news_data.texture_name.c_str());
+    init_news_icon(*m_UIImage, news_data.texture_name);
     float h3 = m_UIImage->GetWndPos().y + m_UIImage->GetHeight();
     h1 = _max(h1, h3);
     SetHeight(h1);

@@ -16,6 +16,31 @@
 #include "xrServer_Objects_ALife_Monsters.h"
 
 #include "specific_character.h"
+#include "xrUICore/Static/UIStatic.h"
+
+shared_str shoc_news_texture(pcstr texture, const Frect& rect)
+{
+    string_path buf;
+    xr_sprintf(buf, "%s|%g,%g,%g,%g", texture, rect.x1, rect.y1, rect.x2, rect.y2);
+    return buf;
+}
+
+void init_news_icon(CUIStatic& icon, const shared_str& texture)
+{
+    pcstr name = texture.c_str();
+    pcstr rect_str = name ? strchr(name, '|') : nullptr;
+    Frect r;
+    if (!rect_str || sscanf(rect_str + 1, "%f,%f,%f,%f", &r.x1, &r.y1, &r.x2, &r.y2) != 4)
+    {
+        icon.InitTexture(name);
+        return;
+    }
+
+    const xr_string file(name, rect_str);
+    icon.InitTexture(file.c_str());
+    icon.SetTextureRect({ r.x1, r.y1, r.x1 + r.x2, r.y1 + r.y2 });
+    icon.SetStretchTexture(true);
+}
 
 void GAME_NEWS_DATA::save(IWriter& stream)
 {
