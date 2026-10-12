@@ -25,7 +25,7 @@ through `-test_script` (Debug/Mixed builds only):
 | `menu` | Boot to the main menu, quit from the menu |
 | `play` | `-nogameintro -start server(all/single/alife/new)`: new game, wait 20 s, kill the nearest living enemy without story id (`obj:kill(actor)`), save as `smoke_test`, `load smoke_test` in the same process, check the enemy is still dead, quit |
 | `load` | `-start server(smoke_test/single/alife/load)`: cold load, check the enemy is still dead, quit |
-| `pda` (optional) | New game, open the PDA map and tasks tabs via `ActorMenu.get_pda_menu()`, take a screenshot of each (moved to `<out>/screenshots`) |
+| `pda` (optional) | New game, open all seven PDA tabs via `ActorMenu.get_pda_menu()`, take a screenshot of each (moved to `<out>/screenshots`) for comparison with the original game |
 | `dogs` (optional) | New game, `ai_ignore_actor 1`, `g_god 1`, actor moved next to the nearest dog pack for 90 s so the group states (rest, idle animations) run, quit. The report counts dog animation fallbacks |
 
 A phase fails on any driver `FAIL`, a non-zero exit code, a timeout, or a missing
@@ -209,3 +209,19 @@ older note that `pUIMapWnd` stays null is outdated. The screenshots showed two f
 both fixed: the tab bar kept the previous tab highlighted when a section was opened
 directly (`e8c40c009`), and the UTF-8 string table overlays showed "AuftrÃ¤ge"
 (`ff5c04dcf`). The plain `screenshot` console command did nothing before `1ef3b97b9`.
+
+## Run 2026-10-12, PDA ports (Linux)
+
+    menu/play/load: 11 PASS
+    pda: 8 PASS (news step, all seven tabs, quit)
+    dogs: 3 PASS
+
+All seven PDA tabs were compared with screenshots of the original game. The tasks tab
+(`4aebb0f2e`) and the map scroll bars (`375b7fa3a`) now match; the "new content" signs
+light up for diary and encyclopedia after a new game (`53447475b`). The new news step
+showed the whole `ui_iconsTotal` atlas before `b167b1fd3`, now the single icon.
+
+The first dogs run of the day stopped with `valid_vertex_id(m_game_vertex_id)` in
+`CStateMonsterSmartTerrainTaskGraphWalk<CAI_Flesh>::execute`: a dangling pointer to a
+temporary Lua smart terrain task, fixed in `828679d85`. The crash depends on when Lua's
+garbage collector runs, so one clean run is weak evidence; further dogs runs are planned.

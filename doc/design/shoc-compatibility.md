@@ -67,9 +67,12 @@ The selected mode is always logged (`* Game mode: shoc`).
 | Month names | No `month_*` string keys | Present | Numeric month when the key isn't translated |
 | Level maps | `game_maps.ltx` `[def_map]`, schematic rects | Per-level `[level_map]` | CoP consistency checks skipped in SoC |
 | UI textures | Per-part DDS files, old XML layouts | Atlas ids | Alias table in `UICore::ReadTextureInfo`; tolerant XML parsing (`maingame.xml` without `<main>`, unknown color names) |
-| PDA | Tasks/diary/contacts/ranking tabs | Different PDA | Separate `CUISHoC*Wnd` windows in SoC mode |
+| PDA | Tasks/diary/contacts/ranking tabs | Different PDA | SoC windows ported from the original layouts, see [PDA](#pda) |
+| News icons | `give_game_news`/`give_talk_message` take a texture file and a rect (x, y, width, height) | Atlas id | Rect kept in the texture name (`file\|x,y,w,h`), so news saves are unchanged; decoded by `init_news_icon()` |
+| Scroll bar textures | `ui_scroll_PDA_*` regions hold cap+body+cap in one rect | Separate `_b`/`_back`/`_e` parts | Regions split into parts in `ui_base.cpp` (SoC block) |
 | String tables | Single-byte text (windows-1252 bytes, header says windows-1251) | Same | The engine doesn't convert encodings: our overlays must be stored as windows-1252, not UTF-8 |
 | Scripts | Non-normalized direction vectors, duplicate `give_task` ids, no task type | Strict | Normalize/warn instead of assert; default task type storyline |
+| Smart terrain tasks | `se_smart_terrain:task()` returns a temporary `CALifeSmartTerrainTask` | Task objects kept alive in Lua | Monster states keep a copy instead of a raw pointer (`keep_smart_terrain_task`); the pointer dangled after Lua's GC ran |
 
 ### Script API
 
@@ -85,7 +88,7 @@ a config or a live script?
 | `level.actor()` | `xr_rest` (`rest` scheme), `_g.get_actor_id` | Unknown: depends on gulag type `rest` in the spawn data | Shim (SoC only), call sites logged |
 | `cse_anomalous_zone.update`, `cse_zone_visual.update` | `se_zones` periodic artefact respawn | No, also not in vanilla | None. The original 1.0006 `xrGame.dll` shows (RTTI) that anomalous zones aren't `CSE_ALifeSchedulable` and that `cse_anomalous_zone` exports no `update` callback, so `se_zone_anom:update()` never ran in the original game either. Vanilla only places artefacts in anomalies when a new game starts (`on_spawn`), which this engine does too (183 artefacts on a new game) |
 | `cse_anomalous_zone:spawn_artefacts()` | `se_zones` (only from the dead `update` path) | No in vanilla; mods may call it | Exported in SoC mode, as in the original DLL; ignored with a log line for online zones |
-| `actor_stats.add_to_ranking`, `remove_from_ranking` | `bind_stalker`, `se_stalker`, `xr_motivator` | Guarded with `~= nil` | Not needed: `CUISHoCRankingWnd` builds the list from the ALife registry |
+| `actor_stats.add_to_ranking`, `remove_from_ranking` | `bind_stalker`, `se_stalker`, `xr_motivator` | Yes (guarded with `~= nil`, so missing exports fail silently) | Exported in SoC mode, feed the ranking tab as in the original |
 | `CHelicopter.eIdleState` etc., `CHelicopter:SetState` | `xr_heli` via `escape_heli` | No (`escape_heli` is never loaded; the live helicopter uses `heli_move`) | None |
 | `level.object()` | `_g.debug_get_level_object`, `script_object`, unregistered schemes | No | None |
 | `actor_sleep`, `clear_callback`, `get_fsm_state`, `send_pda_message`, `set_node_evaluator`, `set_path_evaluator` | `xr_effects.force_actor_sleep`, unregistered schemes | No | None |
@@ -93,6 +96,34 @@ a config or a live script?
 
 Shims live in `src/xrGame/script_shoc_compat.cpp`, are registered only in SoC mode, and
 log every distinct call site once: `~ [shoc-shim] level.actor called from ...:line`.
+
+### PDA
+
+The SoC PDA tabs are ports of the original windows (via OGSR, adapted to the OpenXRay UI
+classes) and read the original XML layouts unchanged:
+
+| Tab | Window | Layout |
+|---|---|---|
+| Aufträge (tasks) | `CUISHoCTaskWnd` | `pda_events.xml`, `job_item.xml`; embedded `CUIMapWnd` or task articles |
+| Karte (map) | `CUIMapWnd` | `pda_map.xml`; SoC scroll bars along the level frame |
+| Tagebuch (diary) | `CUISHoCDiaryWnd` | `events_new.xml`, `news.xml`; journal tree and news archive |
+| Kontakte | `CUISHoCContactsWnd` | `pda_contacts_new.xml`, `pda_character.xml` |
+| Rangliste | `CUISHoCRankingWnd` | `stalkers_ranking.xml`, `stalkers_ranking_character.xml` |
+| Statistik | `CUIActorInfo` (detail title in the right header in SoC) | `actor_statistic.xml` |
+| Umwelt (encyclopedia) | `CUIEncyclopediaWnd` | `encyclopedia.xml`, `encyclopedia_item.xml` |
+
+- The tab bar uses the SoC layout ("§ Tab // § Tab"); the "new content" signs come from
+  `g_pda_info_state` (`pda_section` bits). The original `PdaContentsChanged` hooks for
+  articles, news and tasks are restored in SoC mode; opening a tab clears its sign.
+- Tree lists (`CUITreeViewItem` on `CUIListWnd`): opening/closing a group changes the
+  list's children, and the click arrives while the list iterates them. The toggle is
+  therefore only scheduled in the click and done by the owner's `Update()`
+  (`ToggleTreeItemsIfPending`).
+- Map: SoC zooms in on a target only when the map is fully zoomed out.
+- `CUIStatic::InitTexture()` returns false for plain texture files (not atlas ids) but
+  loads them anyway; don't skip the rect setup on its return value.
+- A contact needs a PDA in the stalker's PDA slot: `CAI_Stalker::CanPutInSlot` allows it
+  in SoC mode.
 
 ### Saves
 
@@ -114,3 +145,7 @@ Results are recorded in [shoc-smoke-test-log.md](shoc-smoke-test-log.md).
 - The R4 renderer doesn't start with SoC data (#487).
 - No CS, CoP or CoC regression run has been done with the smoke test yet.
 - Windows has not been tested.
+- PDA tree clicks (open/close a group, show an article) and task double clicks can't be
+  driven by the smoke test; they were checked by reading the code only.
+- Double clicking the active objective doesn't deactivate it (the task manager has no
+  API to clear the active task); in SoC it did.
