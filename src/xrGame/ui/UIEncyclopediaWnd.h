@@ -26,7 +26,8 @@ class CUIEncyclopediaWnd final : public CUIWindow
     CGameFont* m_tree_item_font{};
     u32 m_tree_item_color{};
 
-    xr_vector<CEncyclopediaArticle> m_articles;
+    // A deque, because CEncyclopediaArticle copies break the shared data's reference count
+    xr_deque<CEncyclopediaArticle> m_articles;
     u32 m_known_articles{};
 
     void UpdateArticles();

@@ -42,7 +42,8 @@ class CUISHoCDiaryWnd final : public CUIWindow, public CUIWndCallback
     CUIStatic* m_updated_sign{};
     CUIStatic* m_old_sign{};
 
-    xr_vector<CEncyclopediaArticle> m_articles;
+    // A deque, because CEncyclopediaArticle copies break the shared data's reference count
+    xr_deque<CEncyclopediaArticle> m_articles;
     u32 m_known_articles{};
 
     void OnFilterChanged(CUIWindow*, void*);
