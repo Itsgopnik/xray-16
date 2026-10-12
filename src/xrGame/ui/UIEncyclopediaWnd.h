@@ -1,51 +1,44 @@
 #pragma once
 #include "xrUICore/Windows/UIWindow.h"
-#include "xrUICore/Callbacks/UIWndCallback.h"
+#include "encyclopedia_article.h"
 
 class CUIStatic;
 class CUIScrollView;
-class CUIListBox;
-class CUIListBoxItem;
+class CUIListWnd;
 class CUIFrameWindow;
-class CUIAnimatedStatic;
 class CUIFrameLineWnd;
+class CUITreeViewItem;
+class CGameFont;
 
-class CUIEncyclopediaWnd final : public CUIWindow, public CUIWndCallback
+// SoC PDA encyclopedia ("Umwelt") tab: article tree on the left, article on the right,
+// built from the original encyclopedia.xml (ported from the SoC/OGSR CUIEncyclopediaWnd).
+class CUIEncyclopediaWnd final : public CUIWindow
 {
     using inherited = CUIWindow;
 
-    CUIFrameWindow* m_info_frame{};
-    CUIFrameWindow* m_index_frame{};
-    CUIFrameWindow* m_mask_frame{};
     CUIFrameLineWnd* m_info_header{};
-    CUIFrameLineWnd* m_index_header{};
-    CUIAnimatedStatic* m_index_anim{};
-    CUIListBox* m_articles_list{};
-    CUIStatic* m_article_title{};
-    CUIScrollView* m_descr_view{};
+    CUIStatic* m_article_header{};
+    CUIListWnd* m_index_list{};
+    CUIScrollView* m_info_list{};
 
-    xr_vector<shared_str> m_article_ids;
-    xr_vector<shared_str> m_article_groups;
-    xr_vector<bool> m_article_unread;
-    xr_vector<shared_str> m_group_ids;
-    xr_map<shared_str, bool> m_group_expanded;
-    shared_str m_selected_article_id;
+    CGameFont* m_tree_root_font{};
+    u32 m_tree_root_color{};
+    CGameFont* m_tree_item_font{};
+    u32 m_tree_item_color{};
+
+    xr_vector<CEncyclopediaArticle> m_articles;
+    u32 m_known_articles{};
+
+    void UpdateArticles();
+    void ShowArticle(CUITreeViewItem* item);
 
 public:
     CUIEncyclopediaWnd();
-    ~CUIEncyclopediaWnd() override = default;
 
     bool Init();
     void Show(bool status) override;
+    void Update() override;
     void SendMessage(CUIWindow* pWnd, s16 msg, void* pData) override;
 
     pcstr GetDebugType() override { return "CUIEncyclopediaWnd"; }
-
-private:
-    void RebuildList();
-    void ShowArticle(const shared_str& article_id);
-    void ClearDetail();
-    void UpdateSelectionColors();
-    void AddGroupHeader(pcstr text, u32 groupIndex, bool expanded);
-    void MarkArticleRead(const shared_str& article_id);
 };

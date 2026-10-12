@@ -3,6 +3,8 @@
 
 class CUITabControl;
 class CUIStatic;
+class CUIWindow;
+class CUIXml;
 
 // Bits in g_pda_info_state: PDA sections with unseen content ("updated" sign in the tab bar)
 namespace pda_section
@@ -24,6 +26,9 @@ enum part : u32
 } // namespace pda_section
 
 extern u32 g_pda_info_state;
+
+// The original layouts repeat a node (e.g. left_auto_static) once per static
+void shoc_init_auto_statics(CUIXml& xml, pcstr node, CUIWindow* parent);
 
 // Packs the tab buttons as in SoC: "[sign] Tab1 // [sign] Tab2 ...", returns the sign positions
 void shoc_rearrange_tab_buttons(CUITabControl* tab, xr_vector<Fvector2>& sign_places);

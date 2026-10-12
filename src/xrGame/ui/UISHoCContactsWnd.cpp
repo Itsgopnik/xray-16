@@ -3,6 +3,7 @@
 
 #include "UIXmlInit.h"
 #include "UICharacterInfo.h"
+#include "UISHoCPdaAux.h"
 #include "xrUICore/Static/UIStatic.h"
 #include "xrUICore/Static/UIAnimatedStatic.h"
 #include "xrUICore/Windows/UIFrameWindow.h"
@@ -19,19 +20,6 @@
 namespace
 {
 constexpr float kContactHeight = 85.0f;
-
-// The original layouts repeat a node (e.g. left_auto_static) once per static
-void init_auto_statics(CUIXml& xml, pcstr node, CUIWindow* parent)
-{
-    const int count = xml.GetNodesNum(xml.GetRoot(), node);
-    for (int i = 0; i < count; ++i)
-    {
-        CUIStatic* st = xr_new<CUIStatic>(node);
-        st->SetAutoDelete(true);
-        CUIXmlInit::InitStatic(xml, node, i, st);
-        parent->AttachChild(st);
-    }
-}
 } // namespace
 
 CSE_ALifeTraderAbstract* ch_info_get_from_id(u16 id);
@@ -85,8 +73,8 @@ bool CUISHoCContactsWnd::Init()
     m_right_frame->AttachChild(m_details);
     CUIXmlInit::InitScrollView(xml, "detail_list", 0, m_details);
 
-    init_auto_statics(xml, "left_auto_static", m_left_frame);
-    init_auto_statics(xml, "right_auto_static", m_right_frame);
+    shoc_init_auto_statics(xml, "left_auto_static", m_left_frame);
+    shoc_init_auto_statics(xml, "right_auto_static", m_right_frame);
     return true;
 }
 

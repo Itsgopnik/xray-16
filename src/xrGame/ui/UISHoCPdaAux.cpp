@@ -3,6 +3,19 @@
 #include "xrUICore/TabControl/UITabControl.h"
 #include "xrUICore/TabControl/UITabButton.h"
 #include "xrUICore/Static/UIStatic.h"
+#include "UIXmlInit.h"
+
+void shoc_init_auto_statics(CUIXml& xml, pcstr node, CUIWindow* parent)
+{
+    const int count = xml.GetNodesNum(xml.GetRoot(), node);
+    for (int i = 0; i < count; ++i)
+    {
+        CUIStatic* st = xr_new<CUIStatic>(node);
+        st->SetAutoDelete(true);
+        CUIXmlInit::InitStatic(xml, node, i, st);
+        parent->AttachChild(st);
+    }
+}
 
 void shoc_rearrange_tab_buttons(CUITabControl* tab, xr_vector<Fvector2>& sign_places)
 {
