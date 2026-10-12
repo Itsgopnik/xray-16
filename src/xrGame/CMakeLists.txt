@@ -2305,6 +2305,12 @@ target_sources(xrGame PRIVATE
     ui/UISHoCTaskWnd.cpp
     ui/UISHoCTaskWnd.h
     ui/UISHoCDiaryWnd.cpp
+    ui/UISHoCPdaAux.cpp
+    ui/UISHoCPdaAux.h
+    ui/UITreeViewItem.cpp
+    ui/UITreeViewItem.h
+    ui/UIEncyclopediaArticleWnd.cpp
+    ui/UIEncyclopediaArticleWnd.h
     ui/UISHoCDiaryWnd.h
     ui/UISHoCContactsWnd.cpp
     ui/UISHoCContactsWnd.h
