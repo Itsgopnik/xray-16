@@ -196,17 +196,20 @@ void CUIActorInfoWnd::FillPointsDetail(const shared_str& id)
     if (!n)
         xr_sprintf(path, "detail_part_def");
 
+    // SoC shows the detail list title on the right (info) header and keeps the actor name
+    // on the left one
+    CUIFrameLineWnd* detail_header = ShadowOfChernobylMode && UIInfoHeader ? UIInfoHeader : UICharIconHeader;
     if (id == "reputation") //reputation
     {
-        if (UICharIconHeader->GetTitleText())
-            UICharIconHeader->GetTitleText()->SetTextST("st_detail_list_for_community_relations");
+        if (detail_header->GetTitleText())
+            detail_header->GetTitleText()->SetTextST("st_detail_list_for_community_relations");
         FillReputationDetails(&uiXml, path);
         return;
     }
     string256 str;
     xr_sprintf(str, "st_detail_list_for_%s", id.c_str());
-    if (UICharIconHeader->GetTitleText())
-        UICharIconHeader->GetTitleText()->SetTextST(str);
+    if (detail_header->GetTitleText())
+        detail_header->GetTitleText()->SetTextST(str);
 
     SStatSectionData& section = Actor()->StatisticMgr().GetSection(id);
     vStatDetailData::const_iterator it = section.data.begin();
