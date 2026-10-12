@@ -370,18 +370,24 @@ void CGameTask::OnArrived()
 void CGameTask::FillEncyclopedia() const
 {
     ARTICLE_VECTOR& article_vector = Actor()->encyclopedia_registry->registry().objects();
-    for (const SGameTaskObjective& obj : m_Objectives)
+    const auto add = [&](const SGameTaskObjective& obj)
     {
         if (!obj.m_article_id.size())
-            continue;
+            return;
 
         if (article_vector.end() != std::find_if(article_vector.begin(), article_vector.end(), FindArticleByIDPred(obj.m_article_id)))
-            continue;
+            return;
 
         CEncyclopediaArticle article;
         article.Load(obj.m_article_id);
         article_vector.emplace_back(obj.m_article_id, Level().GetGameTime(), article.data()->articleType);
-    }
+    };
+
+    // In SoC the first <objective> (the task itself here) usually holds the task's article
+    if (ShadowOfChernobylMode)
+        add(*this);
+    for (const SGameTaskObjective& obj : m_Objectives)
+        add(obj);
 }
 
 CMapLocation* CGameTask::LinkedMapLocation()

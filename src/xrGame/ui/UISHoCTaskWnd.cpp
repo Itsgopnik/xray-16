@@ -500,14 +500,27 @@ void CUISHoCTaskWnd::ShowDescription(CGameTask* task, u16 objective)
     // Task articles: those of the task's group and the objective's own
     m_descr_wnd->ClearAll();
     const SGameTaskObjective& root = task->Objective(ROOT_TASK_OBJECTIVE);
+    bool root_article_shown = false;
     for (const ARTICLE_DATA& data : Actor()->encyclopedia_registry->registry().objects())
     {
         if (data.article_type != ARTICLE_DATA::eTaskArticle)
             continue;
         CEncyclopediaArticle article;
         article.Load(data.article_id);
-        if (task->m_ID == article.data()->group || (root.m_article_id.size() && data.article_id == root.m_article_id))
+        const bool is_root_article = root.m_article_id.size() && data.article_id == root.m_article_id;
+        if (task->m_ID == article.data()->group || is_root_article)
+        {
             m_descr_wnd->AddArticle(&article);
+            root_article_shown |= is_root_article;
+        }
+    }
+
+    // Tasks received before the task's own article was registered (older saves)
+    if (!root_article_shown && root.m_article_id.size())
+    {
+        CEncyclopediaArticle article;
+        article.Load(root.m_article_id);
+        m_descr_wnd->AddArticle(&article);
     }
 }
 
