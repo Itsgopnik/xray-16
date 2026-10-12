@@ -189,13 +189,17 @@ void ToggleTreeItemsIfPending(CUIListWnd* list)
         item->ToggleIfPending();
 }
 
-void CUITreeViewItem::SendMessage(CUIWindow* pWnd, s16 msg, void* pData)
+// Highlight only this item: the list forwards focus messages of any item to all items
+void CUITreeViewItem::OnFocusReceive()
 {
-    if (WINDOW_FOCUS_RECEIVED == msg)
-        UIBkg.TextureOn();
-    else if (WINDOW_FOCUS_LOST == msg)
-        UIBkg.TextureOff();
-    inherited::SendMessage(pWnd, msg, pData);
+    inherited::OnFocusReceive();
+    UIBkg.TextureOn();
+}
+
+void CUITreeViewItem::OnFocusLost()
+{
+    inherited::OnFocusLost();
+    UIBkg.TextureOff();
 }
 
 CUITreeViewItem* CUITreeViewItem::Find(pcstr text) const

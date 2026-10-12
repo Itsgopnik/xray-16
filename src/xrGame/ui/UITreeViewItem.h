@@ -57,7 +57,8 @@ public:
 
     // Call SetText() before SetRoot(), the [+-] signs depend on it
     void SetText(pcstr str) override;
-    void SendMessage(CUIWindow* pWnd, s16 msg, void* pData) override;
+    void OnFocusReceive() override;
+    void OnFocusLost() override;
     // Opening/closing changes the list's children. The click arrives while the list iterates
     // them (buttons don't capture the mouse), so it is only scheduled here; the list owner
     // calls ToggleIfPending() outside of the list's loops.
