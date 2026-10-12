@@ -33,6 +33,7 @@
 #include "UISHoCTaskWnd.h"
 #include "UISHoCDiaryWnd.h"
 #include "UISHoCContactsWnd.h"
+#include "UISHoCPdaAux.h"
 #include "UISHoCRankingWnd.h"
 
 #define PDA_XML "pda.xml"
@@ -86,6 +87,8 @@ CUIPdaWnd::~CUIPdaWnd()
     delete_data(m_hint_wnd);
     if (UINoice)
         delete_data(UINoice);
+    delete_data(m_shoc_updated_sign);
+    delete_data(m_shoc_old_sign);
 }
 
 void CUIPdaWnd::Init()
@@ -216,7 +219,11 @@ void CUIPdaWnd::Init()
 
     UITabControl = xr_new<CUITabControl>();
     UITabControl->SetAutoDelete(true);
-    AttachChild(UITabControl);
+    // SoC's pda.xml positions the tabs relative to the main frame (as the original engine did)
+    if (ShadowOfChernobylMode && UIMainPdaFrame)
+        UIMainPdaFrame->AttachChild(UITabControl);
+    else
+        AttachChild(UITabControl);
     CUIXmlInit::InitTabControl(uiXml, "tab", 0, UITabControl, true, ShadowOfChernobylMode);
     UITabControl->SetMessageTarget(this);
     UITabControl->SetAcceleratorsMode(true);
@@ -256,6 +263,32 @@ void CUIPdaWnd::Init()
     // XXX: dynamically determine if we need to rearrange the tabs
     if (ClearSkyMode)
         RearrangeTabButtons(UITabControl);
+    else if (ShadowOfChernobylMode)
+    {
+        // SoC packs the tabs as "[sign] Tasks // [sign] Map // ..."
+        shoc_rearrange_tab_buttons(UITabControl, m_shoc_sign_places);
+        m_shoc_updated_sign = xr_new<CUIStatic>("updated_section_static");
+        if (!CUIXmlInit::InitStatic(uiXml, "updated_section_static", 0, m_shoc_updated_sign, false))
+            xr_delete(m_shoc_updated_sign);
+        m_shoc_old_sign = xr_new<CUIStatic>("old_section_static");
+        if (!CUIXmlInit::InitStatic(uiXml, "old_section_static", 0, m_shoc_old_sign, false))
+            xr_delete(m_shoc_old_sign);
+    }
+}
+
+void CUIPdaWnd::DrawShocTabSigns()
+{
+    if (m_shoc_updated_sign)
+        m_shoc_updated_sign->Update();
+    if (m_shoc_old_sign)
+        m_shoc_old_sign->Update();
+
+    // Tab order of the SoC pda.xml
+    constexpr pda_section::part sections[] = { pda_section::quests, pda_section::map, pda_section::diary,
+        pda_section::contacts, pda_section::ranking, pda_section::statistics, pda_section::encyclopedia };
+    for (u32 i = 0; i < m_shoc_sign_places.size() && i < std::size(sections); ++i)
+        shoc_draw_tab_sign(UITabControl, m_shoc_sign_places[i], g_pda_info_state & sections[i],
+            m_shoc_updated_sign, m_shoc_old_sign);
 }
 
 void CUIPdaWnd::SendMessage(CUIWindow* pWnd, s16 msg, void* pData)
@@ -466,7 +499,8 @@ void CUIPdaWnd::Show_ContactsWnd(bool status)
 void CUIPdaWnd::Draw()
 {
     inherited::Draw();
-    //.	DrawUpdatedSections();
+    if (ShadowOfChernobylMode)
+        DrawShocTabSigns();
     DrawHint();
     if (UINoice)
         UINoice->Draw(); // over all

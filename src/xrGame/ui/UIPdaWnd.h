@@ -47,6 +47,12 @@ protected:
 
     UIHint* m_hint_wnd;
 
+    // SoC: "updated"/"not updated" signs in front of the tab buttons
+    xr_vector<Fvector2> m_shoc_sign_places;
+    CUIStatic* m_shoc_updated_sign{};
+    CUIStatic* m_shoc_old_sign{};
+    void DrawShocTabSigns();
+
 public:
     // Поддиалоги PDA
     CUIMapWnd* pUIMapWnd;
