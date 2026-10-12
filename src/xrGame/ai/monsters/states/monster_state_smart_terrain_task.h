@@ -9,6 +9,7 @@ class CStateMonsterSmartTerrainTask : public CState<_Object>
     typedef CState<_Object>* state_ptr;
 
     CALifeSmartTerrainTask* m_current_task;
+    std::optional<CALifeSmartTerrainTask> m_task_copy; // SoC, see keep_smart_terrain_task()
 
 public:
     CStateMonsterSmartTerrainTask(_Object* obj);

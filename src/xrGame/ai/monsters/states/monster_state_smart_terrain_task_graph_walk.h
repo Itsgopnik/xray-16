@@ -8,6 +8,7 @@ class CStateMonsterSmartTerrainTaskGraphWalk : public CMonsterStateMove<_Object>
     typedef CMonsterStateMove<_Object> inherited;
 
     CALifeSmartTerrainTask* m_task;
+    std::optional<CALifeSmartTerrainTask> m_task_copy; // SoC, see keep_smart_terrain_task()
 
 public:
     CStateMonsterSmartTerrainTaskGraphWalk(_Object* obj) : inherited(obj) {}

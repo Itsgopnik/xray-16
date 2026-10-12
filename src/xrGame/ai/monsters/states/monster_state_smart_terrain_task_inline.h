@@ -34,7 +34,7 @@ void CStateMonsterSmartTerrainTaskAbstract::initialize()
     VERIFY(monster);
     VERIFY(monster->m_smart_terrain_id != 0xffff);
 
-    m_current_task = monster->brain().smart_terrain().task(monster);
+    m_current_task = keep_smart_terrain_task(monster->brain().smart_terrain().task(monster), m_task_copy);
 }
 
 TEMPLATE_SPECIALIZATION
@@ -167,7 +167,7 @@ void CStateMonsterSmartTerrainTaskAbstract::check_force_state()
 
     // check if task has changed
     CALifeSmartTerrainTask* task = monster->brain().smart_terrain().task(monster);
-    if (!task || (m_current_task != task))
+    if (!task || !same_smart_terrain_task(m_current_task, task))
     {
         if (this->current_substate != u32(-1))
             this->get_state_current()->critical_finalize();
@@ -175,7 +175,7 @@ void CStateMonsterSmartTerrainTaskAbstract::check_force_state()
         this->current_substate = u32(-1);
         this->prev_substate = u32(-1);
 
-        m_current_task = task;
+        m_current_task = keep_smart_terrain_task(task, m_task_copy);
     }
 }
 

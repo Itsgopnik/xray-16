@@ -17,7 +17,7 @@ void CStateMonsterSmartTerrainTaskGraphWalkAbstract::initialize()
     VERIFY(monster->m_smart_terrain_id != 0xffff);
 
     // get task
-    m_task = monster->brain().smart_terrain().task(monster);
+    m_task = keep_smart_terrain_task(monster->brain().smart_terrain().task(monster), m_task_copy);
     VERIFY(m_task);
 }
 
@@ -31,7 +31,7 @@ bool CStateMonsterSmartTerrainTaskGraphWalkAbstract::check_start_conditions()
     if (monster->m_smart_terrain_id == 0xffff)
         return false;
 
-    m_task = monster->brain().smart_terrain().task(monster);
+    m_task = keep_smart_terrain_task(monster->brain().smart_terrain().task(monster), m_task_copy);
     VERIFY3(m_task, "Smart terrain selected, but task was not set for monster ", this->object->cName().c_str());
     if (this->object->ai_location().game_vertex_id() == m_task->game_vertex_id())
         return false;

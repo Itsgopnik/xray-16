@@ -10,6 +10,8 @@
 
 #include "xrAICore/Navigation/game_graph_space.h"
 
+#include <optional>
+
 class CPatrolPoint;
 
 class CALifeSmartTerrainTask
@@ -49,3 +51,23 @@ private:
 };
 
 #include "alife_smart_terrain_task_inline.h"
+
+// SoC's se_smart_terrain:task() returns a temporary Lua object, which the garbage collector may
+// free while a monster state still points to it. In SoC mode the states keep a copy instead,
+// and compare tasks by their target.
+inline CALifeSmartTerrainTask* keep_smart_terrain_task(
+    CALifeSmartTerrainTask* task, std::optional<CALifeSmartTerrainTask>& copy)
+{
+    if (!task || !ShadowOfChernobylMode)
+        return task;
+    copy.emplace(*task);
+    return &*copy;
+}
+
+inline bool same_smart_terrain_task(CALifeSmartTerrainTask* kept, CALifeSmartTerrainTask* task)
+{
+    if (kept == task || !ShadowOfChernobylMode)
+        return kept == task;
+    return kept && task && kept->game_vertex_id() == task->game_vertex_id() &&
+        kept->level_vertex_id() == task->level_vertex_id();
+}
