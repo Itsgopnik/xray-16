@@ -6,7 +6,8 @@
 #   play  new game, kill the nearest enemy, save, load the save in-process, quit
 #   load  load the save from the command line (cold start), check the enemy is dead, quit
 #   dogs  (optional) new game, move next to a dog pack with the AI ignoring the actor, wait 90 s
-#   pda   (optional) new game, open the PDA map and tasks tabs, take a screenshot of each
+#   pda   (optional) new game, open all PDA tabs, take a screenshot of each
+#   music (optional) new game, muted, game time x100 for 7 min: logs which music tracks start when
 #
 # The engine is driven by smoke_driver.lua through -test_script (Debug/Mixed builds only).
 # Game data is not modified. The engine log, user.ltx and the smoke_test save are
@@ -163,6 +164,7 @@ for phase in $PHASES; do
         play) run_phase play -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
         dogs) run_phase dogs -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
         pda) run_phase pda -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
+        music) run_phase music -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
         load)
             if [ -f "$SAVES/smoke_test.sav" ]; then
                 run_phase load -start "server(smoke_test/single/alife/load)" "client(localhost)"
@@ -205,6 +207,7 @@ restore "$APPDATA/user.ltx"
         echo "- FATAL/stack trace: $(grep -ciE 'fatal error|stack trace' "$f")"
         echo "- artefacts spawned by anomalies: $(grep -c '\] spawned artefact \[' "$f")"
         echo "- dog animation fallbacks used: $(grep -c '^~ dog visual \[.*\] has no animation' "$f")"
+        echo "- music tracks started: $(tr -d '\r' < "$f" | grep '^- Play music track:' | sed 's/^- Play music track: //' | tr '\n' ' ')"
         echo
         echo "Most frequent '!' lines:"
         echo

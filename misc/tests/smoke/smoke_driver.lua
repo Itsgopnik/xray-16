@@ -6,7 +6,7 @@
 --
 -- Environment (set by run_smoke.sh):
 --   XRAY_SMOKE_DIR    directory for state.txt and results.txt
---   XRAY_SMOKE_PHASE  menu | play | load | dogs | pda
+--   XRAY_SMOKE_PHASE  menu | play | load | dogs | pda | music
 --
 -- Results are appended to results.txt as "PASS|FAIL <step> <details>".
 
@@ -305,6 +305,35 @@ local function pda_steps()
     return result
 end
 
+-- Run the game time fast across the 6:00 boundary of the day/night music tracks and log the
+-- game clock; the engine logs every started track ("- Play music track:", debug builds).
+-- Music and effects are muted (user.ltx is restored by the runner).
+local function music_steps()
+    local result = {
+        wait(3000),
+        function()
+            console("snd_volume_music 0")
+            console("snd_volume_eff 0")
+            level.set_time_factor(100)
+            return true
+        end,
+    }
+    for _ = 1, 40 do
+        table.insert(result, wait(10000))
+        table.insert(result, function()
+            say(string.format("game clock %02d:%02d", level.get_time_hours(), level.get_time_minutes()))
+            return true
+        end)
+    end
+    table.insert(result, function()
+        report(true, "music_observed", string.format("until %02d:%02d game time", level.get_time_hours(),
+            level.get_time_minutes()))
+        console("quit")
+        return true
+    end)
+    return result
+end
+
 local function on_actor_bound()
     if phase == "play" then
         steps = play_steps()
@@ -314,6 +343,8 @@ local function on_actor_bound()
         steps = dogs_steps()
     elseif phase == "pda" then
         steps = pda_steps()
+    elseif phase == "music" then
+        steps = music_steps()
     else
         return
     end
