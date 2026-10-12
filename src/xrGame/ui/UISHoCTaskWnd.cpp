@@ -394,6 +394,13 @@ void CUISHoCTaskWnd::Show(bool status)
         m_list->Clear();
 }
 
+void CUISHoCTaskWnd::Update()
+{
+    if (m_need_reload && IsShown())
+        ReloadList();
+    inherited::Update();
+}
+
 void CUISHoCTaskWnd::Reset()
 {
     inherited::Reset();
@@ -429,6 +436,7 @@ bool CUISHoCTaskWnd::Filter(CGameTask* task) const
 
 void CUISHoCTaskWnd::ReloadList()
 {
+    m_need_reload = false;
     m_list->Clear();
     if (!g_pGameLevel || !Actor())
         return;

@@ -26,6 +26,7 @@ class CUISHoCTaskWnd final : public CUIWindow, public CUIWndCallback
     };
     ETaskFilter m_filter{ eActiveTask };
     bool m_map_mode{ true };
+    bool m_need_reload{};
 
     CUIWindow* m_right_wnd{};
     CUIMapWnd* m_map_wnd{};
@@ -46,7 +47,10 @@ public:
 
     bool Init();
     void Show(bool status) override;
+    void Update() override;
     void Reset() override;
+    // Rebuilds the list on the next update (tasks changed)
+    void Reload() { m_need_reload = true; }
     void SendMessage(CUIWindow* pWnd, s16 msg, void* pData) override;
     void DrawHint();
 

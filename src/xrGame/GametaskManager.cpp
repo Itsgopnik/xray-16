@@ -9,6 +9,7 @@
 #include "Actor.h"
 #include "UIGameSP.h"
 #include "ui/UIPdaWnd.h"
+#include "ui/UISHoCPdaAux.h"
 #include "encyclopedia_article.h"
 #include "ui/UIMapWnd.h"
 #include "xrCore/buffer_vector.h"
@@ -146,7 +147,11 @@ CGameTask* CGameTaskManager::GiveGameTaskToActor(CGameTask* t, u32 timeToComplet
 
     //установить флажок необходимости прочтения тасков в PDA
     if (CurrentGameUI())
+    {
         CurrentGameUI()->UpdatePda();
+        if (ShadowOfChernobylMode)
+            CurrentGameUI()->GetPdaMenu().PdaContentsChanged(pda_section::quests);
+    }
 
     t->ChangeStateCallback();
 
@@ -176,7 +181,11 @@ void CGameTaskManager::SetTaskState(CGameTask* task, ETaskState state, TASK_OBJE
     }
 
     if (CurrentGameUI())
+    {
         CurrentGameUI()->UpdatePda();
+        if (ShadowOfChernobylMode)
+            CurrentGameUI()->GetPdaMenu().PdaContentsChanged(pda_section::quests);
+    }
 }
 
 void CGameTaskManager::SetTaskState(const TASK_ID& id, ETaskState state, TASK_OBJECTIVE_ID objective_id /*= ROOT_TASK_OBJECTIVE*/)

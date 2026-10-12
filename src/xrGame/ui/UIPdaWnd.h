@@ -109,6 +109,8 @@ public:
     bool NeedCursor() const override;
     void UpdatePda();
     void UpdateRankingWnd();
+    // SoC: marks a section (pda_section::part) as having unseen content
+    void PdaContentsChanged(u32 section);
 
     pcstr GetDebugType() override { return "CUIPdaWnd"; }
 

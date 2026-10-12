@@ -438,6 +438,20 @@ void CUIPdaWnd::SetActiveSubdialog(const shared_str& section)
         m_pActiveDialog->Show(true);
         m_sActiveSection = section;
         SetActiveCaption();
+
+        if (ShadowOfChernobylMode)
+        {
+            // The opened section is seen (the diary's journal/news signs are cleared by its filter tabs)
+            const std::pair<pcstr, u32> sections[] = { { "eptTasks", pda_section::quests },
+                { "eptMap", pda_section::map }, { "eptLogs", pda_section::diary },
+                { "eptContacts", pda_section::contacts }, { "eptRanking", pda_section::ranking },
+                { "eptStatistics", pda_section::statistics }, { "eptEncyclopedia", pda_section::encyclopedia } };
+            for (const auto& [id, part] : sections)
+            {
+                if (section == id)
+                    g_pda_info_state &= ~part;
+            }
+        }
     }
     else
     {
@@ -538,6 +552,16 @@ void CUIPdaWnd::UpdatePda()
     {
         pUITaskWnd->ReloadTaskInfo();
     }
+}
+
+void CUIPdaWnd::PdaContentsChanged(u32 section)
+{
+    if (section == pda_section::quests && pUISHoCTaskWnd)
+        pUISHoCTaskWnd->Reload();
+
+    // As in SoC, new contacts get no sign
+    if (section != pda_section::contacts)
+        g_pda_info_state |= section;
 }
 
 void CUIPdaWnd::UpdateRankingWnd()
