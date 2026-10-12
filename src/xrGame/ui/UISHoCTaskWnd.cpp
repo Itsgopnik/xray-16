@@ -223,7 +223,6 @@ public:
         CUISHoCTaskItem::Update();
         if (m_curr_descr_mode != m_owner->GetDescriptionMode())
             UpdateSwitchTexture();
-        m_switch_descr_btn->SetButtonState(m_owner->GetDescriptionMode() ? CUIButton::BUTTON_NORMAL : CUIButton::BUTTON_PUSHED);
 
         if (m_rem_time->IsShown())
         {
