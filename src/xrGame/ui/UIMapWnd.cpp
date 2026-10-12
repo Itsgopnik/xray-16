@@ -55,6 +55,7 @@ CUIMapWnd::~CUIMapWnd()
     delete_data(m_ActionPlanner);
     delete_data(m_GameMaps);
     delete_data(m_map_location_hint);
+    delete_data(m_text_hint);
     /*
     #ifdef DEBUG
         delete_data( m_dbg_text_hint );
@@ -182,6 +183,16 @@ bool CUIMapWnd::Init(cpcstr xml_name, cpcstr start_from, bool critical /*= true*
     }
 
     init_xml_nav(uiXml, start_from, critical);
+
+    if (ShadowOfChernobylMode)
+    {
+        strconcat(sizeof(pth), pth, start_from, ":main_wnd:text_hint");
+        if (uiXml.NavigateToNode(pth, 0))
+        {
+            m_text_hint = xr_new<CUIStatic>("text_hint");
+            CUIXmlInit::InitStatic(uiXml, pth, 0, m_text_hint);
+        }
+    }
 
     m_map_location_hint = xr_new<CUIMapLocationHint>();
     m_map_location_hint->SetAutoDelete(false);
@@ -405,6 +416,8 @@ void CUIMapWnd::MoveMap(Fvector2 const& pos_delta)
 void CUIMapWnd::Draw()
 {
     inherited::Draw();
+    if (m_text_hint)
+        m_text_hint->Draw();
     /*
     #ifdef DEBUG
         m_dbg_text_hint->Draw	();
@@ -857,6 +870,8 @@ void CUIMapWnd::HideHint(CUIWindow* parent)
 void CUIMapWnd::HideCurHint() { m_map_location_hint->SetOwner(NULL); }
 void CUIMapWnd::Hint(const shared_str& text)
 {
+    if (m_text_hint)
+        m_text_hint->SetTextST(text.c_str());
     /*
 #ifdef DEBUG
     m_dbg_text_hint->SetTextST( *text );

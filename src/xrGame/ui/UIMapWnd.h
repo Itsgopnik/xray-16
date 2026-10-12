@@ -46,6 +46,7 @@ private:
     CMapActionPlanner* m_ActionPlanner;
     CUIFrameLineWnd* m_UIMainMapHeader;
     CUIMapLocationHint* m_map_location_hint;
+    CUIStatic* m_text_hint{}; // SoC: name of the map under the cursor
     CMapLocation* m_cur_location;
 
 #ifdef DEBUG
