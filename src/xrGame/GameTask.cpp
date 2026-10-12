@@ -390,6 +390,44 @@ void CGameTask::FillEncyclopedia() const
         add(obj);
 }
 
+void CGameTask::UpdateObjectiveMapLocations()
+{
+    for (TASK_OBJECTIVE_ID i = 1; i < GetObjectivesCount(); ++i)
+    {
+        SGameTaskObjective& obj = Objective(i);
+        if (obj.m_linked_map_location || obj.GetTaskState() != eTaskStateInProgress)
+            continue;
+        if (obj.m_map_object_id == u16(-1) || obj.m_map_location.size() == 0)
+            continue;
+
+        // Hidden locations appear once the previous objective is completed
+        const bool visible = obj.m_def_location_enabled ||
+            (i > 1 && Objective(i - 1).GetTaskState() == eTaskStateCompleted);
+        if (!visible)
+            continue;
+
+        // Saved with the game, or created now
+        xr_vector<CMapLocation*> locations;
+        Level().MapManager().GetMapLocations(obj.m_map_location, obj.m_map_object_id, locations);
+        // Two objectives may point at the same object with the same spot type: take a free one
+        const auto it = std::find_if(locations.begin(), locations.end(), [this](CMapLocation* ml)
+        {
+            if (ml->m_owner_task_id != m_ID)
+                return false;
+            for (TASK_OBJECTIVE_ID j = 0; j < GetObjectivesCount(); ++j)
+            {
+                if (Objective(j).m_linked_map_location == ml)
+                    return false;
+            }
+            return true;
+        });
+        if (it != locations.end())
+            obj.m_linked_map_location = *it;
+        else
+            obj.CreateMapLocation(false);
+    }
+}
+
 CMapLocation* CGameTask::LinkedMapLocation()
 {
     if (m_active_objective == ROOT_TASK_OBJECTIVE)

@@ -200,6 +200,9 @@ public:
     CMapLocation* LinkedMapLocation() override;
 
     void FillEncyclopedia() const;
+    // SoC: gives every objective in progress its map location, as the original did when the task
+    // arrived or the previous objective was completed (hidden ones). Also links them after a load.
+    void UpdateObjectiveMapLocations();
 
     // for scripting access
     void Load_script(pcstr id) { Load(id); }

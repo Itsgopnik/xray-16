@@ -223,6 +223,9 @@ void CGameTaskManager::UpdateTasks()
             if (t->GetTaskState() != eTaskStateInProgress)
                 continue;
 
+            if (ShadowOfChernobylMode)
+                t->UpdateObjectiveMapLocations();
+
             const auto objectives = t->GetObjectivesCount();
             for (TASK_OBJECTIVE_ID i = 0; i < objectives; ++i)
             {
