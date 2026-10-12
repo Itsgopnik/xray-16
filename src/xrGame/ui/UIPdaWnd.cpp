@@ -512,6 +512,8 @@ void CUIPdaWnd::DrawHint()
         pUITaskWnd->DrawHint();
     else if (m_pActiveDialog == pUIMapWnd && pUIMapWnd)
         pUIMapWnd->DrawHint();
+    else if (m_pActiveDialog == pUISHoCTaskWnd && pUISHoCTaskWnd)
+        pUISHoCTaskWnd->DrawHint();
     else if (m_pActiveDialog == pUIRankingWnd && pUIRankingWnd)
         pUIRankingWnd->DrawHint();
 
