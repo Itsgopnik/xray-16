@@ -101,7 +101,35 @@ bool CUIMapWnd::Init(cpcstr xml_name, cpcstr start_from, bool critical /*= true*
     }
 
     m_scroll_mode = uiXml.ReadAttribInt(start_from, 0, "scroll_enable", 0) == 1;
-    if (m_scroll_mode || ShadowOfChernobylMode)
+    if (ShadowOfChernobylMode)
+    {
+        // As in SoC: plain pda scroll bars along the bottom and right edge of the level frame
+        m_scroll_mode = true;
+        constexpr float shift = 5.0f;
+        Frect r = m_UILevelFrame->GetWndRect();
+        if (m_UILevelFrame->GetParent() != this)
+            r.add(m_UILevelFrame->GetParent()->GetWndPos().x, m_UILevelFrame->GetParent()->GetWndPos().y);
+
+        m_UIMainScrollH = xr_new<CUIScrollBar>();
+        m_UIMainScrollH->InitScrollBar(Fvector2().set(r.left, r.bottom + shift), r.width(), true, "pda");
+        m_UIMainScrollH->SetStepSize(_max(1, iFloor(m_UILevelFrame->GetWidth() / 10)));
+        m_UIMainScrollH->SetPageSize(iFloor(m_UILevelFrame->GetWidth()));
+        m_UIMainScrollH->SetAutoDelete(true);
+        AttachChild(m_UIMainScrollH);
+        Register(m_UIMainScrollH);
+        AddCallback(m_UIMainScrollH, SCROLLBAR_HSCROLL, CUIWndCallback::void_function(this, &CUIMapWnd::OnScrollH));
+
+        m_UIMainScrollV = xr_new<CUIScrollBar>();
+        m_UIMainScrollV->InitScrollBar(Fvector2().set(r.right + shift, r.top),
+            m_UIMainScrollH->GetWndRect().bottom - r.top, false, "pda");
+        m_UIMainScrollV->SetStepSize(_max(1, iFloor(m_UILevelFrame->GetHeight() / 10)));
+        m_UIMainScrollV->SetPageSize(iFloor(m_UILevelFrame->GetHeight()));
+        m_UIMainScrollV->SetAutoDelete(true);
+        AttachChild(m_UIMainScrollV);
+        Register(m_UIMainScrollV);
+        AddCallback(m_UIMainScrollV, SCROLLBAR_VSCROLL, CUIWndCallback::void_function(this, &CUIMapWnd::OnScrollV));
+    }
+    else if (m_scroll_mode)
     {
         float dx, dy, sx, sy;
         strconcat(sizeof(pth), pth, start_from, ":main_map_frame");
@@ -355,7 +383,9 @@ void CUIMapWnd::SetTargetMap(CUICustomMap* m, const Fvector2& pos, bool bZoomIn)
     }
     else
     {
-        if (bZoomIn /* && fsimilar(GlobalMap()->GetCurrentZoom(), GlobalMap()->GetMinZoom(),EPS_L )*/)
+        // SoC zooms in only from the fully zoomed out map, keeping the player's zoom otherwise
+        const bool zoomedOut = fsimilar(GlobalMap()->GetCurrentZoom().x, GlobalMap()->GetMinZoom(), EPS_L);
+        if (bZoomIn && (!ShadowOfChernobylMode || zoomedOut))
             SetZoom(GlobalMap()->GetMaxZoom());
 
         //		m_tgtCenter						= m->ConvertRealToLocalNoTransform(pos, m->BoundRect());
