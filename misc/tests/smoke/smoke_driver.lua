@@ -286,7 +286,9 @@ local function pda_steps()
         db.actor:give_game_news("smoke test news", "ui\\ui_iconsTotal", Frect():set(0, 658, 83, 47), 0, 10000)
         return true
     end
-    local result = { wait(8000), news, wait(1500), shot, wait(1000) }
+    -- All map locations to the engine log (debug builds), to check the map spots
+    local function dump_map() console("dump_map") return true end
+    local result = { wait(8000), news, wait(1500), shot, dump_map, wait(1000) }
     for _, section in ipairs({ "eptTasks", "eptMap", "eptLogs", "eptContacts", "eptRanking",
                                "eptStatistics", "eptEncyclopedia" }) do
         table.insert(result, show_tab(section))
