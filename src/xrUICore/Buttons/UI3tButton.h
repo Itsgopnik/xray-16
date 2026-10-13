@@ -52,6 +52,7 @@ public:
 
     bool m_frameline_mode;
     bool vertical;
+    bool m_stretch_background{ true }; // false: the state textures keep their own size
     CUI_IB_Static* m_background;
     CUI_IB_FrameLineWnd* m_back_frameline;
 

@@ -57,6 +57,9 @@ void CUICheckButton::InitCheckButton(Fvector2 pos, Fvector2 size, LPCSTR texture
 void CUICheckButton::InitTexture2(LPCSTR texture_name)
 {
     CUI3tButton::InitTexture(texture_name); // "ui_checker"
+    // SoC: the checker icon keeps its size at the left, the rest of the width is the text
+    if (ShadowOfChernobylMode)
+        m_stretch_background = false;
     Frect r = m_background->Get(S_Enabled)->GetStaticItem()->GetTextureRect();
     TextItemControl()->m_TextOffset.x = TextItemControl()->m_TextOffset.x + r.width();
 }
