@@ -520,6 +520,44 @@ local function hook_actor_binder()
     end
 end
 
+-- Every main menu screen in turn, opened through the menu's own button handlers, with a screenshot
+-- of each (compare with the original game)
+local function mainmenu_steps(get_menu)
+    local function shot(name)
+        return function()
+            say("screenshot " .. name)
+            console("screenshot")
+            return true
+        end
+    end
+    local function opt() return get_menu().opt_dlg end
+    local result = {
+        wait(3000), shot("main"),
+        function() get_menu():OnButton_options_clicked() return true end, wait(2000), shot("options_video"),
+        function() opt():OnBtnAdvGraphic() return true end, wait(1500), shot("options_video_adv"),
+        function() opt():OnSimplyGraphic() return true end,
+    }
+    for i, name in ipairs({ "sound", "gameplay", "controls" }) do
+        table.insert(result, function() opt().tab:SetActiveTab(tostring(i)) return true end)
+        table.insert(result, wait(1500))
+        table.insert(result, shot("options_" .. name))
+    end
+    for _, step in ipairs({
+        function() opt():OnBtnCancel() return true end, wait(1500),
+        function() get_menu():OnButton_load_clicked() return true end, wait(2000), shot("load"),
+        function() get_menu().load_dlg:OnButton_back_clicked() return true end, wait(1500),
+        function() get_menu():OnButton_quit_clicked() return true end, wait(1500), shot("quit_box"),
+        function()
+            report(true, "mainmenu_screens", "main, options (5), load, quit box")
+            console("quit")
+            return true
+        end,
+    }) do
+        table.insert(result, step)
+    end
+    return result
+end
+
 local function hook_main_menu()
     prefetch("ui_main_menu")
     local cls = ui_main_menu and ui_main_menu.main_menu
@@ -527,32 +565,52 @@ local function hook_main_menu()
         report(false, "hook", "ui_main_menu.main_menu not found")
         return
     end
-    local original = cls.Update
-    local menu_shown = false
-    steps = {
-        function()
-            report(true, "main_menu", "main menu is updating")
-            return true
-        end,
-        wait(3000),
-        function() console("quit") return true end,
-    }
-    cls.Update = function(self)
-        if original then
-            original(self)
-        else
-            CUIScriptWnd.Update(self)
+    local menu
+    local last_step_time
+    -- The menu hides while one of its dialogs is shown: their updates drive the steps too
+    local function drive()
+        local now = time_global()
+        if last_step_time ~= now then
+            last_step_time = now
+            run_steps()
         end
-        if not menu_shown then
-            menu_shown = true
-            say("main menu shown")
-        end
-        run_steps()
     end
+    local function hook(c, name)
+        local original = c.Update
+        c.Update = function(self)
+            if original then
+                original(self)
+            else
+                CUIScriptWnd.Update(self)
+            end
+            if name == "main_menu" and not menu then
+                menu = self
+                say("main menu shown")
+            end
+            drive()
+        end
+    end
+    if phase == "mainmenu" then
+        steps = mainmenu_steps(function() return menu end)
+        prefetch("ui_mm_opt_main")
+        prefetch("ui_load_dialog")
+        hook(ui_mm_opt_main.options_dialog, "options")
+        hook(ui_load_dialog.load_dialog, "load")
+    else
+        steps = {
+            function()
+                report(true, "main_menu", "main menu is updating")
+                return true
+            end,
+            wait(3000),
+            function() console("quit") return true end,
+        }
+    end
+    hook(cls, "main_menu")
 end
 
 say("driver loaded, phase=" .. phase)
-if phase == "menu" then
+if phase == "menu" or phase == "mainmenu" then
     -- The main menu runs in the script engine created at application start;
     -- ALife never starts in this phase.
     hook_main_menu()

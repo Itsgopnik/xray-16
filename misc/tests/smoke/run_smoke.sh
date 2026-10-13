@@ -3,6 +3,7 @@
 #
 # Phases, each in a separate engine process:
 #   menu  boot to the main menu, quit from the menu
+#   mainmenu (optional) main menu, options tabs, load dialog, quit box: a screenshot of each
 #   play  new game, kill the nearest enemy, save, load the save in-process, quit
 #   load  load the save from the command line (cold start), check the enemy is dead, quit
 #   dogs  (optional) new game, move next to a dog pack with the AI ignoring the actor, wait 90 s
@@ -161,6 +162,7 @@ run_phase() {
 for phase in $PHASES; do
     case "$phase" in
         menu) run_phase menu ;;
+        mainmenu) run_phase mainmenu ;;
         # -nogameintro: otherwise the opening cinematic runs (~200 s, game time paused)
         # unless some input happens to skip it, which made visible runs non-deterministic
         play) run_phase play -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
