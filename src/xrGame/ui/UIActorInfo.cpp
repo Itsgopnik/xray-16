@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "UIActorInfo.h"
+#include "UISHoCPdaAux.h"
 #include "UIXmlInit.h"
 
 #include "xrUICore/Windows/UIFrameLineWnd.h"
@@ -72,11 +73,22 @@ bool CUIActorInfoWnd::Init()
     UICharacterInfo = xr_new<CUICharacterInfo>();
     UICharacterInfo->SetAutoDelete(true);
     UICharacterWindow->AttachChild(UICharacterInfo);
-    UICharacterInfo->InitCharacterInfo(UICharacterWindow->GetWndPos(), UICharacterWindow->GetWndSize(), ACTOR_CHARACTER_XML);
+    // SoC: the character window gives the position, the info fills it (as in the original)
+    const Fvector2 character_pos = ShadowOfChernobylMode ? Fvector2{ 0.0f, 0.0f } : UICharacterWindow->GetWndPos();
+    UICharacterInfo->InitCharacterInfo(character_pos, UICharacterWindow->GetWndSize(), ACTOR_CHARACTER_XML);
 
     // Элементы автоматического добавления
-    CUIXmlInit::InitAutoStaticGroup(uiXml, "right_auto_static", 0, UICharIconFrame);
-    CUIXmlInit::InitAutoStaticGroup(uiXml, "left_auto_static", 0, UIInfoFrame);
+    if (ShadowOfChernobylMode)
+    {
+        // The SoC layout repeats the node once per line (and "right" is the left frame)
+        shoc_init_auto_statics(uiXml, "right_auto_static", UICharIconFrame);
+        shoc_init_auto_statics(uiXml, "left_auto_static", UIInfoFrame);
+    }
+    else
+    {
+        CUIXmlInit::InitAutoStaticGroup(uiXml, "right_auto_static", 0, UICharIconFrame);
+        CUIXmlInit::InitAutoStaticGroup(uiXml, "left_auto_static", 0, UIInfoFrame);
+    }
 
     return true;
 }
