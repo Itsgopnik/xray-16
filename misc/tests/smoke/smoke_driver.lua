@@ -379,6 +379,51 @@ local function farspots_steps()
     }
 end
 
+-- Dead body search window: kill the nearest enemy stalker, open his body (obj:use), screenshot
+local function loot_steps()
+    local body_id
+    return {
+        wait(8000),
+        function()
+            local a = actor()
+            local best, best_dist
+            for id = 1, 65534 do
+                local obj = level.object_by_id(id)
+                if obj and obj:is_stalker() and obj:alive() and id ~= a:id() and obj:story_id() == 4294967295
+                    and obj:relation(a) == game_object.enemy then
+                    local dist = obj:position():distance_to(a:position())
+                    if not best or dist < best_dist then
+                        best, best_dist = obj, dist
+                    end
+                end
+            end
+            if not best then
+                report(false, "loot_body", "no enemy stalker online")
+                console("quit")
+                steps = {}
+                return true
+            end
+            body_id = best:id()
+            best:kill(a)
+            report(true, "loot_body", string.format("%s killed, %.1f m away", best:name(), best_dist))
+            return true
+        end,
+        wait(3000),
+        function()
+            local body = level.object_by_id(body_id)
+            if body then
+                body:use(actor())
+            end
+            report(body ~= nil, "loot_window", "dead body search opened")
+            return true
+        end,
+        wait(2000),
+        function() console("screenshot") return true end,
+        wait(2000),
+        function() ActorMenu.get_actor_menu():HideDialog() console("quit") return true end,
+    }
+end
+
 -- Loaded save: where are the actor, the trader, Wolf and their task spots (debug aid)
 local function probe_steps()
     local function pos(se)
@@ -415,6 +460,8 @@ local function on_actor_bound()
         steps = pda_steps()
     elseif phase == "music" then
         steps = music_steps()
+    elseif phase == "loot" then
+        steps = loot_steps()
     elseif phase == "farspots" then
         steps = farspots_steps()
     elseif phase == "probe" then
