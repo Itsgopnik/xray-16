@@ -72,6 +72,8 @@ The selected mode is always logged (`* Game mode: shoc`).
 | Scroll bar textures | `ui_scroll_PDA_*` regions hold cap+body+cap in one rect | Separate `_b`/`_back`/`_e` parts | Regions split into parts in `ui_base.cpp` (SoC block) |
 | String tables | Single-byte text (windows-1252 bytes, header says windows-1251) | Same | The engine doesn't convert encodings: our overlays must be stored as windows-1252, not UTF-8 |
 | Scripts | Non-normalized direction vectors, duplicate `give_task` ids, no task type | Strict | Normalize/warn instead of assert; default task type storyline |
+| Task objectives | Every objective has its own map location and article; the first `<objective>` holds the task article | One map location per task | `CGameTask::UpdateObjectiveMapLocations()` creates/links objective locations (hidden ones after the previous objective is completed); `FillEncyclopedia()` also registers the first objective's article |
+| Level music | Tracks picked with `start <= time < end`, so night windows (22 to 6 h) never play; the configs list cut music there (`amb20`, `amb09`, `amb17`) | Midnight wrap (`SMusicTrack::in`) | Original condition in SoC mode: no music at night |
 | Smart terrain tasks | `se_smart_terrain:task()` returns a temporary `CALifeSmartTerrainTask` | Task objects kept alive in Lua | Monster states keep a copy instead of a raw pointer (`keep_smart_terrain_task`); the pointer dangled after Lua's GC ran |
 
 ### Script API
@@ -119,7 +121,11 @@ classes) and read the original XML layouts unchanged:
   list's children, and the click arrives while the list iterates them. The toggle is
   therefore only scheduled in the click and done by the owner's `Update()`
   (`ToggleTreeItemsIfPending`).
-- Map: SoC zooms in on a target only when the map is fully zoomed out.
+- Map: SoC zooms in on a target only when the map is fully zoomed out, and shows the
+  name of the map under the cursor in `text_hint` ("Kordon"). The small green dots on
+  the map are `debug_stalker` spots, created only in Debug builds (upstream code).
+- `CEncyclopediaArticle` must not be copied (the implicit copy doesn't take a reference
+  on the shared data): the PDA windows keep their articles in an `xr_deque`.
 - `CUIStatic::InitTexture()` returns false for plain texture files (not atlas ids) but
   loads them anyway; don't skip the rect setup on its return value.
 - A contact needs a PDA in the stalker's PDA slot: `CAI_Stalker::CanPutInSlot` allows it

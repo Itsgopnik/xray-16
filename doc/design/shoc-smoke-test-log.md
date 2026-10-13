@@ -26,6 +26,7 @@ through `-test_script` (Debug/Mixed builds only):
 | `play` | `-nogameintro -start server(all/single/alife/new)`: new game, wait 20 s, kill the nearest living enemy without story id (`obj:kill(actor)`), save as `smoke_test`, `load smoke_test` in the same process, check the enemy is still dead, quit |
 | `load` | `-start server(smoke_test/single/alife/load)`: cold load, check the enemy is still dead, quit |
 | `pda` (optional) | New game, open all seven PDA tabs via `ActorMenu.get_pda_menu()`, take a screenshot of each (moved to `<out>/screenshots`) for comparison with the original game |
+| `music` (optional) | New game, muted, game time x100 for about 7 minutes; the report lists the music tracks the engine started |
 | `dogs` (optional) | New game, `ai_ignore_actor 1`, `g_god 1`, actor moved next to the nearest dog pack for 90 s so the group states (rest, idle animations) run, quit. The report counts dog animation fallbacks |
 
 A phase fails on any driver `FAIL`, a non-zero exit code, a timeout, or a missing
@@ -225,3 +226,16 @@ The first dogs run of the day stopped with `valid_vertex_id(m_game_vertex_id)` i
 `CStateMonsterSmartTerrainTaskGraphWalk<CAI_Flesh>::execute`: a dangling pointer to a
 temporary Lua smart terrain task, fixed in `828679d85`. The crash depends on when Lua's
 garbage collector runs, so one clean run is weak evidence; further dogs runs are planned.
+
+## Run 2026-10-13, task map spots and music (Linux)
+
+    menu/play/load: 11 PASS
+    pda: 8 PASS (now gives the first story task with map spots, dumps the map locations)
+    dogs: 3 PASS
+    music: 2 PASS
+
+The pda phase found that SoC objectives had no map locations (only `actor`, `level_changer`,
+`neutral` and Debug-only `debug_stalker` spots), fixed in `e71bb520a`, and a shutdown
+assert (`_refcount == 0`) from copied `CEncyclopediaArticle` objects, fixed in
+`5dec7cbd9`. The music phase showed the cut night track `amb20` at the 05:30 start;
+with the original selection rule (`7a0066ff3`) the first track is `amb01` at 06:04.
