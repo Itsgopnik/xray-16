@@ -33,7 +33,9 @@ void CUICustomMap::Initialize(shared_str name, LPCSTR sh_name)
         levelIni = xr_new<CInifile>(map_cfg_fn);
     }
 
-    if (levelIni->section_exist("level_map"))
+    // SoC reads the map data only from game_maps.ltx; a level.ltx may still have a [level_map]
+    // section without bound_rect (l01_escape), which put the current level's spots off the texture
+    if (levelIni->section_exist("level_map") && !ShadowOfChernobylMode)
     {
         Init_internal(name, *levelIni, "level_map", sh_name);
     }
