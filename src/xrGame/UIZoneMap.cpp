@@ -83,6 +83,14 @@ void CUIZoneMap::Init(bool motionIconAttached)
         temp.mul(m_background.GetWndSize());
         m_compass.SetWndPos(temp);
     }
+    else if (ShadowOfChernobylMode)
+    {
+        // SoC drew the compass on its own at its zone_map.xml position (screen coordinates),
+        // here it is a child of the background: take the background offset out
+        temp = m_compass.GetWndPos();
+        temp.sub(m_background.GetWndPos());
+        m_compass.SetWndPos(temp);
+    }
 
     if (m_clock_wnd && motionIconAttached)
     {
