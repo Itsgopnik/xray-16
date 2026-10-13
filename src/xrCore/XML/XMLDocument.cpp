@@ -221,9 +221,12 @@ XML_NODE XMLDocument::NavigateToNode(CONST_XML_NODE start_node, pcstr path, cons
 
     char* cursor = buf_str;
 
-    // Thread-safe tokenization over ':'
+    // Thread-safe tokenization over ':'. Like strtok, which was used before, it skips empty
+    // tokens: paths like ":texture" (relative to the local root) must still work.
     auto next_token = [](char*& cur) -> char*
     {
+        while (cur && *cur == ':')
+            ++cur;
         if (!cur || *cur == '\0')
             return nullptr;
 
