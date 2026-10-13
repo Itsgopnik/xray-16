@@ -189,7 +189,8 @@ CUI3tButton* CScriptXmlInit::Init3tButton(LPCSTR path, CUIWindow* parent)
 CUITabControl* CScriptXmlInit::InitTab(LPCSTR path, CUIWindow* parent)
 {
     CUITabControl* pWnd = xr_new<CUITabControl>();
-    CUIXmlInit::InitTabControl(m_xml, path, 0, pWnd);
+    // SoC layouts (ui_mm_opt.xml) give their tab buttons no id: use the index, as the original did
+    CUIXmlInit::InitTabControl(m_xml, path, 0, pWnd, true, ShadowOfChernobylMode);
     _attach_child(pWnd, parent);
     return pWnd;
 }
