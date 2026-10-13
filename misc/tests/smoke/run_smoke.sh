@@ -7,6 +7,7 @@
 #   load  load the save from the command line (cold start), check the enemy is dead, quit
 #   dogs  (optional) new game, move next to a dog pack with the AI ignoring the actor, wait 90 s
 #   pda   (optional) new game, open all PDA tabs, take a screenshot of each
+#   farspots (optional) new game with the first story task, actor moved 575 m away, PDA map screenshot
 #   music (optional) new game, muted, game time x100 for 7 min: logs which music tracks start when
 #
 # The engine is driven by smoke_driver.lua through -test_script (Debug/Mixed builds only).
@@ -164,6 +165,7 @@ for phase in $PHASES; do
         play) run_phase play -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
         dogs) run_phase dogs -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
         pda) run_phase pda -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
+        farspots) run_phase farspots -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
         music) run_phase music -nogameintro -start "server(all/single/alife/new)" "client(localhost)" ;;
         load)
             if [ -f "$SAVES/smoke_test.sav" ]; then

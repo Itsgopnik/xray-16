@@ -293,7 +293,19 @@ local function pda_steps()
     end
     -- All map locations to the engine log (debug builds), to check the map spots
     local function dump_map() console("dump_map") return true end
-    local result = { wait(8000), task, news, wait(1500), shot, dump_map, wait(1000) }
+    -- The objective spots must sit on their story objects, not on the actor
+    local function spots()
+        local trader = alife():story_object(story_ids.Escape_Trader)
+        local wolf = alife():story_object(story_ids.Escape_novice_lager_volk)
+        local ok = trader and wolf and level.map_has_object_spot(trader.id, "blue_location") ~= 0 and
+            level.map_has_object_spot(wolf.id, "green_location") ~= 0 and
+            level.map_has_object_spot(db.actor:id(), "blue_location") == 0 and
+            level.map_has_object_spot(db.actor:id(), "green_location") == 0
+        report(ok, "pda_task_spots", string.format("trader %s, wolf %s, actor %d",
+            trader and tostring(trader.id) or "?", wolf and tostring(wolf.id) or "?", db.actor:id()))
+        return true
+    end
+    local result = { wait(8000), task, news, wait(1500), shot, dump_map, spots, wait(1000) }
     for _, section in ipairs({ "eptTasks", "eptMap", "eptLogs", "eptContacts", "eptRanking",
                                "eptStatistics", "eptEncyclopedia" }) do
         table.insert(result, show_tab(section))
@@ -334,6 +346,62 @@ local function music_steps()
     return result
 end
 
+-- Task spots far from the actor: give the first story task, move the actor 575 m east of the trader
+-- (as in a user's save), open the PDA map. The spots must stay on the level map texture
+-- (a wrong bound_rect of the current level put them next to the actor).
+local function farspots_steps()
+    local pda
+    return {
+        wait(8000),
+        function()
+            console("g_god 1")
+            console("ai_ignore_actor 1")
+            db.actor:give_info_portion("tutorial_wounded_start")
+            local vid = level.vertex_id(vector():set(317, 0, -8))
+            db.actor:set_actor_position(level.vertex_position(vid))
+            return true
+        end,
+        wait(15000),
+        function()
+            local trader = alife():story_object(story_ids.Escape_Trader)
+            say("farspots trader online: " .. (trader and tostring(trader.online) or "?"))
+            pda = ActorMenu.get_pda_menu()
+            pda:ShowDialog(true)
+            pda:SetActiveSubdialog("eptMap")
+            return true
+        end,
+        wait(3000),
+        function() console("screenshot") return true end,
+        wait(2000),
+        function() pda:HideDialog() console("quit") return true end,
+    }
+end
+
+-- Loaded save: where are the actor, the trader, Wolf and their task spots (debug aid)
+local function probe_steps()
+    local function pos(se)
+        return se and string.format("%d (%.0f, %.0f)", se.id, se.position.x, se.position.z) or "?"
+    end
+    return {
+        wait(3000),
+        function()
+            local trader = alife():story_object(story_ids.Escape_Trader)
+            local wolf = alife():story_object(story_ids.Escape_novice_lager_volk)
+            local a = db.actor
+            say(string.format("probe actor %d (%.0f, %.0f), trader %s, wolf %s", a:id(), a:position().x,
+                a:position().z, pos(trader), pos(wolf)))
+            for _, t in ipairs({ "blue_location", "green_location" }) do
+                say(string.format("probe %s: actor %d trader %d wolf %d", t, level.map_has_object_spot(a:id(), t),
+                    trader and level.map_has_object_spot(trader.id, t) or -1,
+                    wolf and level.map_has_object_spot(wolf.id, t) or -1))
+            end
+            console("dump_map")
+            console("quit")
+            return true
+        end,
+    }
+end
+
 local function on_actor_bound()
     if phase == "play" then
         steps = play_steps()
@@ -345,6 +413,10 @@ local function on_actor_bound()
         steps = pda_steps()
     elseif phase == "music" then
         steps = music_steps()
+    elseif phase == "farspots" then
+        steps = farspots_steps()
+    elseif phase == "probe" then
+        steps = probe_steps()
     else
         return
     end
