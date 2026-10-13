@@ -126,6 +126,10 @@ classes) and read the original XML layouts unchanged:
   the map are `debug_stalker` spots, created only in Debug builds (upstream code).
 - `CEncyclopediaArticle` must not be copied (the implicit copy doesn't take a reference
   on the shared data): the PDA windows keep their articles in an `xr_deque`.
+- Use the default UI style. `res/.../styles_/ui_style_shoc` overrides `actor_statistic.xml`,
+  `pda_dialog_character.xml`, `encyclopedia*.xml` and `pda.xml` with layouts made for the
+  CoP windows that SoC used before the ports; with the ported windows they shift the
+  layout (statistics tab).
 - `CUIStatic::InitTexture()` returns false for plain texture files (not atlas ids) but
   loads them anyway; don't skip the rect setup on its return value.
 - A contact needs a PDA in the stalker's PDA slot: `CAI_Stalker::CanPutInSlot` allows it
