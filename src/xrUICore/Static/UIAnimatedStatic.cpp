@@ -62,7 +62,7 @@ void CUIAnimatedStatic::Update()
 
 void CUIAnimatedStatic::SetFrame(const u32 frameNum)
 {
-    const int currRow = frameNum / m_uAnimRows;
+    const int currRow = frameNum / m_uAnimCols; // frames are laid out row by row
     const int currCol = frameNum % m_uAnimCols;
     Frect texture_rect;
 
