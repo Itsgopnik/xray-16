@@ -19,6 +19,7 @@ private:
     CUIStatic m_clipFrame{ "Clip frame" };
     CUIStatic m_Counter{ "Counter" };
     CUIStatic m_Counter_text{ "Counter text" };
+    bool m_counter_on_static{}; // SoC: the number is the text of m_Counter itself
     CUIStatic* m_clock_wnd{};
     CUIStatic* m_pointerDistanceText{};
 

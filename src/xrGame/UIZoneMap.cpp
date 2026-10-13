@@ -91,7 +91,20 @@ void CUIZoneMap::Init(bool motionIconAttached)
         m_clock_wnd->SetWndPos(temp);
     }
 
-    if (IsGameTypeSingle())
+    if (IsGameTypeSingle() && ShadowOfChernobylMode && !uiXml.NavigateToNode("minimap:static_counter", 0))
+    {
+        // SoC: the contacts counter is static_pda_online in maingame.xml, a box with its own text
+        // at the bottom right of the minimap background
+        CUIXml mainXml;
+        if (mainXml.Load(CONFIG_PATH, UI_PATH, UI_PATH_DEFAULT, "maingame.xml", false) &&
+            CUIXmlInit::InitStatic(mainXml, "static_pda_online", 0, &m_Counter, false))
+        {
+            m_background.AttachChild(&m_Counter);
+            m_Counter.SetText("");
+            m_counter_on_static = true;
+        }
+    }
+    else if (IsGameTypeSingle())
     {
         CUIXmlInit::InitStatic(uiXml, "minimap:static_counter", 0, &m_Counter, false);
         m_background.AttachChild(&m_Counter);
@@ -135,7 +148,7 @@ void CUIZoneMap::Update()
                 xr_sprintf(text_str, sizeof(text_str), "%d", cn);
             }
         }
-        m_Counter_text.SetText(text_str);
+        (m_counter_on_static ? m_Counter : m_Counter_text).SetText(text_str);
     }
 
     UpdateRadar(Device.vCameraPosition);
@@ -166,7 +179,8 @@ void CUIZoneMap::UpdateRadar(Fvector pos)
         if (m_activeMap->GetPointerDistance() > 0.5f)
         {
             string64 str;
-            xr_sprintf(str, "%.0f m", m_activeMap->GetPointerDistance());
+            // SoC shows one decimal, e.g. "583.1 m."
+            xr_sprintf(str, ShadowOfChernobylMode ? "%.1f m." : "%.0f m", m_activeMap->GetPointerDistance());
             m_pointerDistanceText->SetText(str);
         }
         else
@@ -231,4 +245,7 @@ void CUIZoneMap::OnSectorChanged(IRender_Sector::sector_id_t sector)
     m_activeMap->InitTextureEx(sub_texture, m_activeMap->m_shader_name.c_str());
 }
 
-void CUIZoneMap::Counter_ResetClrAnimation() { m_Counter_text.ResetColorAnimation(); }
+void CUIZoneMap::Counter_ResetClrAnimation()
+{
+    (m_counter_on_static ? m_Counter : m_Counter_text).ResetColorAnimation();
+}
