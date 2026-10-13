@@ -252,7 +252,13 @@ void CLevelSoundManager::Update()
                 if (T.IsPlaying())
                     T.Stop();
 
-                if (T.in(game_time))
+                // SoC chose tracks without wrapping around midnight, so its night tracks
+                // (22 to 6 h, cut music like amb20) never played: keep the original behaviour
+                const bool active = ShadowOfChernobylMode ?
+                    (0 == T.m_ActiveTime.x && 0 == T.m_ActiveTime.y) ||
+                        (int(game_time) >= T.m_ActiveTime.x && int(game_time) < T.m_ActiveTime.y) :
+                    T.in(game_time);
+                if (active)
                     indices.push_back(k);
                 /*
                                 if ((0==T.m_ActiveTime.x) && (0==T.m_ActiveTime.y)||
