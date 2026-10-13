@@ -58,11 +58,11 @@ void CUIActorMenu::InitDeadBodySearchMode()
     m_takeall_button->Show(true);
     GetModeSpecificPartnerInfo(mmDeadBodySearch)->Show(nullptr != m_pPartnerInvOwner);
 
-    // SoC layout: the partner info sits in its own frame (static_icon 1), shown as in the original:
-    // the dead stalker's portrait and data, a monster's icon, or empty for a box
+    // SoC layout: the partner info sits in its own frame (static_icon 1). As in the original it shows
+    // the dead stalker's portrait and data or a monster's icon; boxes have no frame
     auto partnerIcon = m_SearchLootPartnerCharacterInfo->GetParent();
     if (partnerIcon != this)
-        partnerIcon->Show(true);
+        partnerIcon->Show(nullptr != m_pPartnerInvOwner);
 
     InitInventoryContents(m_pLists[eSearchLootActorBagList],
         m_pLists[eSearchLootActorBagList] != m_pLists[eInventoryBagList]);
