@@ -369,7 +369,16 @@ void CUIHudStatesWnd::UpdateActiveItemInfo(CActor* actor)
 
         item->GetBriefInfo(m_item_info);
 
-        //		UIWeaponBack.SetText		( str_name.c_str() );
+        // SoC: ammo name and fire mode on the weapon frame, e.g. "5.45x39 (A)"
+        if (ShadowOfChernobylMode && m_static_weapon)
+        {
+            string256 name;
+            if (m_item_info.fire_mode.size())
+                xr_sprintf(name, "%s (%s)", m_item_info.name.c_str(), m_item_info.fire_mode.c_str());
+            else
+                xr_strcpy(name, m_item_info.name.c_str());
+            m_static_weapon->SetText(name);
+        }
         if (m_fire_mode)
             m_fire_mode->SetText(m_item_info.fire_mode.c_str());
         SetAmmoIcon(m_item_info.icon.c_str());
@@ -466,6 +475,8 @@ void CUIHudStatesWnd::UpdateActiveItemInfo(CActor* actor)
     }
     else
     {
+        if (ShadowOfChernobylMode && m_static_weapon)
+            m_static_weapon->SetText("");
         if (m_ui_weapon_icon)
             m_ui_weapon_icon->Show(false);
 

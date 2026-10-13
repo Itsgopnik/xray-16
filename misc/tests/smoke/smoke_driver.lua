@@ -284,6 +284,8 @@ local function pda_steps()
     -- SoC news icon: texture file plus rect (x, y, width, height), shown on the HUD
     local function news()
         db.actor:give_game_news("smoke test news", "ui\\ui_iconsTotal", Frect():set(0, 658, 83, 47), 0, 10000)
+        -- pistol in hand, so the HUD shot shows the weapon panel (ammo name, count, icon)
+        db.actor:activate_slot(1)
         return true
     end
     -- First story task with map locations (talk to Wolf), as given after the talk with Sidorovich
