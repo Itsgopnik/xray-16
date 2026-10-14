@@ -346,6 +346,11 @@ bool CUIXmlInitBase::Init3tButton(CUIXml& xml_doc, pcstr path, int index, CUI3tB
     InitWindow(xml_doc, path, index, pWnd);
     pWnd->InitButton(pWnd->GetWndPos(), pWnd->GetWndSize());
 
+    // SoC draws button textures at their own size (shifted by texture_offset) unless the layout
+    // asks for stretch="1"; the tab buttons of ui_mm_opt.xml rely on it
+    if (ShadowOfChernobylMode)
+        pWnd->m_stretch_background = xml_doc.ReadAttribInt(path, index, "stretch", 0) == 1;
+
     string256 buf;
     InitText(xml_doc, strconcat(buf, path, ":text"), index, pWnd->TextItemControl());
     u32 color;
