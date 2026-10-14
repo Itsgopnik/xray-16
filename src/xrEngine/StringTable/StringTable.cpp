@@ -68,6 +68,11 @@ void CStringTable::Init()
         Load(fn);
     });
 
+    // SoC names only its DX9 renderers. The OpenGL renderer registers as renderer_r3 outside Windows
+    // and is a fully dynamic one: show SoC's "dynamic lighting" for it
+    if (ShadowOfChernobylMode && !has_translation("renderer_r3") && has_translation("renderer_r2"))
+        pData->m_StringTable["renderer_r3"] = translate("renderer_r2");
+
     if (!translate("st_currency", pData->m_sCurrency) &&
         !translate("ui_st_money_descr", pData->m_sCurrency) && // OGSR
         !translate("ui_st_money_regional", pData->m_sCurrency)) // xp-dev
