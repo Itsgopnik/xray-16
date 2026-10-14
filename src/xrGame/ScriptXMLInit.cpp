@@ -192,6 +192,10 @@ CUITabControl* CScriptXmlInit::InitTab(LPCSTR path, CUIWindow* parent)
     // SoC layouts (ui_mm_opt.xml) give their tab buttons no id: use the index, as the original did
     CUIXmlInit::InitTabControl(m_xml, path, 0, pWnd, true, ShadowOfChernobylMode);
     _attach_child(pWnd, parent);
+    // SoC's tab control pushed its first button when the buttons were added; the options dialog
+    // relies on it (no tab highlighted otherwise). Needs the parent: the change is reported to it.
+    if (ShadowOfChernobylMode && pWnd->GetTabsCount() && pWnd->GetParent())
+        pWnd->SetActiveTabByIndex(0);
     return pWnd;
 }
 
