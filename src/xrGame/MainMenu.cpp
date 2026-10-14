@@ -832,7 +832,9 @@ void CMainMenu::Hide_CTMS_Dialog()
 LPCSTR CMainMenu::GetGSVer()
 {
     static string256 buff;
-    xr_strcpy(buff, GetGameVersion());
+    // Shown in the main menu ("ver. ..."): SoC displays its own patch version. The multiplayer
+    // version checks use GetGameVersion() directly.
+    xr_strcpy(buff, ShadowOfChernobylMode ? "1.0006" : GetGameVersion());
     return buff;
 }
 
