@@ -4,6 +4,7 @@
 #include "xrUICore/XML/xrUIXmlParser.h"
 #include "UIEditKeyBind.h"
 #include "xrUICore/ScrollView/UIScrollView.h"
+#include "xrUICore/Static/UIStatic.h"
 #include "xrEngine/xr_level_controller.h"
 
 CUIKeyBinding::CUIKeyBinding()
@@ -39,6 +40,24 @@ void CUIKeyBinding::InitFromXml(CUIXml& xml_doc, LPCSTR path)
     CUIXmlInit::InitFrameLine(xml_doc, strconcat(sizeof(buf), buf, path, ":header_2"), 0, &m_header[1]);
     if (!m_isGamepadBinds)
         CUIXmlInit::InitFrameLine(xml_doc, strconcat(sizeof(buf), buf, path, ":header_3"), 0, &m_header[2]);
+
+    // SoC writes the header captions as <text> of the header node, not as a <title> child
+    if (ShadowOfChernobylMode)
+    {
+        for (int i = 0; i < (m_isGamepadBinds ? 2 : 3); ++i)
+        {
+            string256 header_path;
+            xr_sprintf(header_path, "%s:header_%d", path, i + 1);
+            if (m_header[i].GetTitleText() || !xml_doc.NavigateToNode(header_path, 0))
+                continue;
+            auto* caption = xr_new<CUIStatic>("header caption");
+            caption->SetAutoDelete(true);
+            CUIXmlInit::InitStatic(xml_doc, header_path, 0, caption);
+            caption->TextureOff();
+            caption->SetWndPos({ 0.0f, 0.0f });
+            m_header[i].AttachChild(caption);
+        }
+    }
 
     FillUpList(xml_doc, path);
 }
