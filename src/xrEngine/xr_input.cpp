@@ -391,13 +391,39 @@ void CInput::ControllerUpdate()
     if (!IsControllerAvailable())
         return;
 
-    count = SDL_PeepEvents(nullptr, 0,
+    // Only deliberate input switches to the controller: buttons, touchpad touches or an axis past the
+    // inner dead zone. Stick noise of a connected but unused controller (e.g. a DualSense) switched
+    // it all the time, and dialogs like the quit message box then hid the mouse cursor.
+    count = SDL_PeepEvents(events, MAX_CONTROLLER_EVENTS,
         SDL_PEEKEVENT, SDL_CONTROLLERAXISMOTION, SDL_CONTROLLERTOUCHPADUP);
 
-    if (count)
+    bool deliberate = false;
+    for (int i = 0; i < count && !deliberate; ++i)
+    {
+        const SDL_Event& event = events[i];
+        switch (event.type)
+        {
+        case SDL_CONTROLLERAXISMOTION:
+            deliberate = std::abs(event.caxis.value) > psControllerStickInnerDeadZone * SDL_JOYSTICK_AXIS_MAX;
+            break;
+        case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERTOUCHPADDOWN:
+            deliberate = true;
+            break;
+        default: break;
+        }
+    }
+
+    if (deliberate)
         SetCurrentInputType(Controller);
     else if (currentInputType != Controller)
+    {
+        // Drop the noise, nothing listens to the controller now
+        SDL_FlushEvent(SDL_CONTROLLERAXISMOTION);
+        SDL_FlushEvents(SDL_CONTROLLERBUTTONDOWN, SDL_CONTROLLERBUTTONUP);
+        SDL_FlushEvents(SDL_CONTROLLERTOUCHPADDOWN, SDL_CONTROLLERSENSORUPDATE);
         return;
+    }
 
     SDL_PumpEvents();
     count = SDL_PeepEvents(events, MAX_CONTROLLER_EVENTS,
