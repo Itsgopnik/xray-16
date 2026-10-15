@@ -533,10 +533,20 @@ void CWeapon::Load(LPCSTR section)
 
 void CWeapon::LoadScope(const shared_str& section)
 {
-    if (ShadowOfChernobylMode) // XXX: temporary check for SOC mode, to be removed
-        return;
-    pWpnScopeXml.Init();
     R_ASSERT(m_UIScope);
+    if (ShadowOfChernobylMode)
+    {
+        // SoC has no scopes.xml: scope_texture is a texture stretched over the screen
+        auto* scope = xr_new<CUIStatic>("Scope texture");
+        scope->SetAutoDelete(true);
+        scope->SetWndRect({ 0.f, 0.f, UI_BASE_WIDTH, UI_BASE_HEIGHT });
+        scope->InitTextureEx(section.c_str(), "hud" DELIMITER "default");
+        scope->SetStretchTexture(true);
+        m_UIScope->SetWndRect({ 0.f, 0.f, UI_BASE_WIDTH, UI_BASE_HEIGHT });
+        m_UIScope->AttachChild(scope);
+        return;
+    }
+    pWpnScopeXml.Init();
     CUIXmlInit::InitWindow(*pWpnScopeXml, section.c_str(), 0, m_UIScope);
 }
 
