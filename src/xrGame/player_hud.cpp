@@ -311,6 +311,11 @@ Fmatrix hud_item_measures::load_monolithic(const shared_str& sect_name, IKinemat
         else
             m_shell_point_offset.set(0, 0, 0);
 
+        // setup_firedeps() computes only the points flagged here
+        m_prop_flags.set(e_fire_point, true);
+        m_prop_flags.set(e_fire_point2, true);
+        m_prop_flags.set(e_shell_point, true);
+
         m_hands_offset[0][0] = {};
         m_hands_offset[1][0] = {};
 
@@ -342,6 +347,8 @@ Fmatrix hud_item_measures::load_monolithic(const shared_str& sect_name, IKinemat
         m_fire_point_offset  = {};
         m_fire_point2_offset = {};
         m_shell_point_offset = {};
+
+        m_prop_flags.set(e_fire_point | e_fire_point2 | e_shell_point, false);
     }
 
     load_inertion_params(sect_name);
