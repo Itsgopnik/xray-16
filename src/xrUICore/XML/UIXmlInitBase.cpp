@@ -156,6 +156,9 @@ bool CUIXmlInitBase::InitStatic(CUIXml& xml_doc, pcstr path, int index, CUIStati
     else if (0 == xr_strcmp(mirroring, "b"))
         pWnd->GetStaticItem()->SetMirrorMode(EUIMirroring::Both);
 
+    // SoC layouts (e.g. the save picture in ui_mm_load_dlg.xml)
+    pWnd->SetClipper(xml_doc.ReadAttribInt(path, index, "clipper", 0) != 0);
+
     const int flag = xml_doc.ReadAttribInt(path, index, "heading", 0);
     pWnd->EnableHeading((flag) ? true : false);
 

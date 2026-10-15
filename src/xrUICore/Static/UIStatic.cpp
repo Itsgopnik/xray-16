@@ -67,9 +67,17 @@ bool CUIStatic::InitTextureEx(pcstr texture, pcstr shader, bool /*fatal = true*/
 
 void CUIStatic::Draw()
 {
+    if (m_bClipper)
+    {
+        Frect clip_rect;
+        GetAbsoluteRect(clip_rect);
+        UI().PushScissor(clip_rect);
+    }
     DrawTexture();
     inherited::Draw();
     DrawText();
+    if (m_bClipper)
+        UI().PopScissor();
 }
 
 void CUIStatic::DrawText()

@@ -94,6 +94,8 @@ public:
     CUIStaticItem& GetUIStaticItem() { return m_UIStaticItem; }
     void SetStretchTexture(bool stretch_texture) { m_bStretchTexture = stretch_texture; }
     bool GetStretchTexture() { return m_bStretchTexture; }
+    // SoC layouts: clip the texture, children and text to the window rect
+    void SetClipper(bool clipper) { m_bClipper = clipper; }
     void SetHeading(float f) { m_fHeading = f; };
     float GetHeading() { return m_fHeading; }
     bool Heading() { return m_bHeading; }
@@ -113,6 +115,7 @@ protected:
     Fvector2 m_TextureOffset;
     bool m_bStretchTexture{};
     bool m_bTextureEnable{ true };
+    bool m_bClipper{};
 
     bool m_bHeading{};
     bool m_bConstHeading{};
