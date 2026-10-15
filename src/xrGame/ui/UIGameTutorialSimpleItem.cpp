@@ -268,7 +268,27 @@ void CUISequenceSimpleItem::Start()
         }
 
         CUIPdaWnd& pda = ui_game_sp->GetPdaMenu();
-        if (!xr_stricmp(m_pda_section, "pda_map"))
+        // SoC tutorials name the PDA tabs differently, "pda_closed" closes the PDA
+        static constexpr std::pair<pcstr, pcstr> shoc_sections[] = {
+            { "pda_quests", "eptTasks" }, { "pda_diary", "eptLogs" }, { "pda_contacts", "eptContacts" },
+            { "pda_encyclopedia", "eptEncyclopedia" } };
+        cpcstr shoc_subdialog = [&]() -> pcstr
+        {
+            if (ShadowOfChernobylMode)
+            {
+                for (const auto& [name, subdialog] : shoc_sections)
+                    if (!xr_stricmp(m_pda_section, name))
+                        return subdialog;
+            }
+            return nullptr;
+        }();
+
+        if (shoc_subdialog)
+        {
+            pda.SetActiveSubdialog(shoc_subdialog);
+            bShowPda = true;
+        }
+        else if (!xr_stricmp(m_pda_section, "pda_map"))
         {
             pda.Show_MapWnd(true);
             bShowPda = true;
