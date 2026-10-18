@@ -16,6 +16,7 @@
 #include "game_news.h"
 #include "UIPdaMsgListItem.h"
 #include "xrGame/game_type.h"
+#include "xrEngine/StringTable/StringTable.h"
 
 constexpr cpcstr CHAT_LOG_LIST_PENDING = "chat_log_list_pending";
 
@@ -104,6 +105,26 @@ void CUIMessagesWindow::Init(float x, float y, float width, float height)
 void CUIMessagesWindow::AddIconedPdaMessage(const GAME_NEWS_DATA* news)
 {
     CUIPdaMsgListItem* pItem = m_pGameLog->AddPdaMessage();
+
+    if (ShadowOfChernobylMode)
+    {
+        // SoC's maingame_pda_msg.xml starts the icon and the text at x = 0: the original
+        // engine moved the text right of the icon and put the time in front of it
+        const shared_str time = GetTimeAsString(news->receive_time, InventoryUtilities::etpTimeToMinutes);
+        const xr_string text = xr_string(time.c_str()) + " " + StringTable().translate(news->news_text).c_str();
+        pItem->UIMsgText.SetText(text.c_str());
+
+        pItem->SetColorAnimation(
+            "ui_main_msgs_short", LA_ONLYALPHA | LA_TEXTCOLOR | LA_TEXTURECOLOR, float(news->show_time));
+        init_news_icon(pItem->UIIcon, news->texture_name);
+
+        pItem->UIMsgText.SetWndPos({ pItem->UIIcon.GetWidth(), pItem->UIMsgText.GetWndPos().y });
+        pItem->UIMsgText.AdjustHeightToText();
+        pItem->SetHeight(_max(pItem->UIIcon.GetHeight(), pItem->UIMsgText.GetHeight()));
+
+        m_pGameLog->SendMessage(pItem, CHILD_CHANGED_SIZE);
+        return;
+    }
 
     cpcstr time_str = GetTimeAsString(news->receive_time, InventoryUtilities::etpTimeToMinutes).c_str();
     pItem->UITimeText.SetText(time_str);
