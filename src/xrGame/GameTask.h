@@ -7,6 +7,8 @@
 #include "xrScriptEngine/Functor.hpp"
 
 class CGameTaskManager;
+class CUIXml;
+class TiXmlNode;
 class CMapLocation;
 class CGameTask;
 
@@ -108,6 +110,8 @@ private:
     bool CheckInfo(const xr_vector<shared_str>&) const;
     void CallAllFuncs(const task_state_functors& v);
     bool CheckFunctions(const task_state_functors& v) const;
+    bool CallFunc(const luabind::functor<bool>& func) const;
+    void LoadConditions(CUIXml& xml, TiXmlNode* node);
 
 protected:
     virtual void ChangeStateCallback();
@@ -177,6 +181,7 @@ public:
 
 public:
     void Load(const TASK_ID& id);
+    void LoadXmlConditions();
 
     void save(IWriter& stream) override;
     void load(IReader& stream) override;

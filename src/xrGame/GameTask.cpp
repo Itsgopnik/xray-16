@@ -167,96 +167,147 @@ void CGameTask::Load(const TASK_ID& id)
             objective.m_map_object_id = storyId2GameId(_sid);
         }
 
-        //------infoportion_complete
+        objective.LoadConditions(gameTaskXml, l_root);
+
+        gameTaskXml.SetLocalRoot(task_node);
+    }
+    gameTaskXml.SetLocalRoot(gameTaskXml.GetRoot());
+}
+
+void SGameTaskObjective::LoadConditions(CUIXml& xml, XML_NODE node)
+{
+    //------infoportion_complete
+    {
+        const int info_num = xml.GetNodesNum(node, "infoportion_complete");
+        m_completeInfos.resize(info_num);
+
+        for (int j = 0; j < info_num; ++j)
         {
-            const int info_num = gameTaskXml.GetNodesNum(l_root, "infoportion_complete");
-            objective.m_completeInfos.resize(info_num);
-
-            for (int j = 0; j < info_num; ++j)
-            {
-                objective.m_completeInfos[j] = gameTaskXml.Read(l_root, "infoportion_complete", j, nullptr);
-            }
+            m_completeInfos[j] = xml.Read(node, "infoportion_complete", j, nullptr);
         }
+    }
 
-        //------infoportion_fail
+    //------infoportion_fail
+    {
+        const int info_num = xml.GetNodesNum(node, "infoportion_fail");
+        m_failInfos.resize(info_num);
+
+        for (int j = 0; j < info_num; ++j)
         {
-            const int info_num = gameTaskXml.GetNodesNum(l_root, "infoportion_fail");
-            objective.m_failInfos.resize(info_num);
-
-            for (int j = 0; j < info_num; ++j)
-            {
-                objective.m_failInfos[j] = gameTaskXml.Read(l_root, "infoportion_fail", j, nullptr);
-            }
+            m_failInfos[j] = xml.Read(node, "infoportion_fail", j, nullptr);
         }
+    }
 
-        //------infoportion_set_complete
+    //------infoportion_set_complete
+    {
+        const int info_num = xml.GetNodesNum(node, "infoportion_set_complete");
+        m_infos_on_complete.resize(info_num);
+        for (int j = 0; j < info_num; ++j)
         {
-            const int info_num = gameTaskXml.GetNodesNum(l_root, "infoportion_set_complete");
-            objective.m_infos_on_complete.resize(info_num);
-            for (int j = 0; j < info_num; ++j)
-            {
-                objective.m_infos_on_complete[j] = gameTaskXml.Read(l_root, "infoportion_set_complete", j, nullptr);
-            }
+            m_infos_on_complete[j] = xml.Read(node, "infoportion_set_complete", j, nullptr);
         }
+    }
 
-        //------infoportion_set_fail
+    //------infoportion_set_fail
+    {
+        const int info_num = xml.GetNodesNum(node, "infoportion_set_fail");
+        m_infos_on_fail.resize(info_num);
+        for (int j = 0; j < info_num; ++j)
         {
-            const int info_num = gameTaskXml.GetNodesNum(l_root, "infoportion_set_fail");
-            objective.m_infos_on_fail.resize(info_num);
-            for (int j = 0; j < info_num; ++j)
-            {
-                objective.m_infos_on_fail[j] = gameTaskXml.Read(l_root, "infoportion_set_fail", j, nullptr);
-            }
+            m_infos_on_fail[j] = xml.Read(node, "infoportion_set_fail", j, nullptr);
         }
+    }
 
-        //------function_complete
+    if (ShadowOfChernobylMode)
+    {
+        // The script helper is saved with the game, and CommitScriptHelperContents()
+        // rebuilds the functors from it only: keep the XML functions there too
+        const auto add_functions = [&](pcstr tag, xr_vector<shared_str>& names)
         {
-            const int info_num = gameTaskXml.GetNodesNum(l_root, "function_complete");
-            objective.m_complete_lua_functions.resize(info_num);
-            for (int j = 0; j < info_num; ++j)
+            const int num = xml.GetNodesNum(node, tag);
+            for (int j = 0; j < num; ++j)
             {
-                cpcstr str = gameTaskXml.Read(l_root, "function_complete", j, nullptr);
-                [[maybe_unused]] const bool functor_exists = GEnv.ScriptEngine->functor(str, objective.m_complete_lua_functions[j]);
-                THROW3(functor_exists, "Cannot find script function described in task objective  ", str);
+                const shared_str name = xml.Read(node, tag, j, nullptr);
+                if (std::find(names.begin(), names.end(), name) == names.end())
+                    names.emplace_back(name);
             }
-        }
+        };
+        add_functions("function_complete", m_pScriptHelper.m_s_complete_lua_functions);
+        add_functions("function_fail", m_pScriptHelper.m_s_fail_lua_functions);
+        add_functions("function_call_complete", m_pScriptHelper.m_s_lua_functions_on_complete);
+        add_functions("function_call_fail", m_pScriptHelper.m_s_lua_functions_on_fail);
+        CommitScriptHelperContents();
+        return;
+    }
 
-        //------function_fail
+    //------function_complete
+    {
+        const int info_num = xml.GetNodesNum(node, "function_complete");
+        m_complete_lua_functions.resize(info_num);
+        for (int j = 0; j < info_num; ++j)
         {
-            const int info_num = gameTaskXml.GetNodesNum(l_root, "function_fail");
-            objective.m_fail_lua_functions.resize(info_num);
-            for (int j = 0; j < info_num; ++j)
-            {
-                cpcstr str = gameTaskXml.Read(l_root, "function_fail", j, nullptr);
-                [[maybe_unused]] const bool functor_exists = GEnv.ScriptEngine->functor(str, objective.m_fail_lua_functions[j]);
-                THROW3(functor_exists, "Cannot find script function described in task objective  ", str);
-            }
+            cpcstr str = xml.Read(node, "function_complete", j, nullptr);
+            [[maybe_unused]] const bool functor_exists = GEnv.ScriptEngine->functor(str, m_complete_lua_functions[j]);
+            THROW3(functor_exists, "Cannot find script function described in task objective  ", str);
         }
+    }
 
-        //------function_on_complete
+    //------function_fail
+    {
+        const int info_num = xml.GetNodesNum(node, "function_fail");
+        m_fail_lua_functions.resize(info_num);
+        for (int j = 0; j < info_num; ++j)
         {
-            const int info_num = gameTaskXml.GetNodesNum(l_root, "function_call_complete");
-            objective.m_lua_functions_on_complete.resize(info_num);
-            for (int i = 0; i < info_num; ++i)
-            {
-                cpcstr str = gameTaskXml.Read(l_root, "function_call_complete", i, nullptr);
-                [[maybe_unused]] const bool functor_exists = GEnv.ScriptEngine->functor(str, objective.m_lua_functions_on_complete[i]);
-                THROW3(functor_exists, "Cannot find script function described in task objective  ", str);
-            }
+            cpcstr str = xml.Read(node, "function_fail", j, nullptr);
+            [[maybe_unused]] const bool functor_exists = GEnv.ScriptEngine->functor(str, m_fail_lua_functions[j]);
+            THROW3(functor_exists, "Cannot find script function described in task objective  ", str);
         }
+    }
 
-        //------function_on_fail
+    //------function_on_complete
+    {
+        const int info_num = xml.GetNodesNum(node, "function_call_complete");
+        m_lua_functions_on_complete.resize(info_num);
+        for (int i = 0; i < info_num; ++i)
         {
-            const int info_num = gameTaskXml.GetNodesNum(l_root, "function_call_fail");
-            objective.m_lua_functions_on_fail.resize(info_num);
-            for (int j = 0; j < info_num; ++j)
-            {
-                cpcstr str = gameTaskXml.Read(l_root, "function_call_fail", j, nullptr);
-                [[maybe_unused]] const bool functor_exists = GEnv.ScriptEngine->functor(str, objective.m_lua_functions_on_fail[j]);
-                THROW3(functor_exists, "Cannot find script function described in task objective  ", str);
-            }
+            cpcstr str = xml.Read(node, "function_call_complete", i, nullptr);
+            [[maybe_unused]] const bool functor_exists = GEnv.ScriptEngine->functor(str, m_lua_functions_on_complete[i]);
+            THROW3(functor_exists, "Cannot find script function described in task objective  ", str);
         }
+    }
 
+    //------function_on_fail
+    {
+        const int info_num = xml.GetNodesNum(node, "function_call_fail");
+        m_lua_functions_on_fail.resize(info_num);
+        for (int j = 0; j < info_num; ++j)
+        {
+            cpcstr str = xml.Read(node, "function_call_fail", j, nullptr);
+            [[maybe_unused]] const bool functor_exists = GEnv.ScriptEngine->functor(str, m_lua_functions_on_fail[j]);
+            THROW3(functor_exists, "Cannot find script function described in task objective  ", str);
+        }
+    }
+}
+
+void CGameTask::LoadXmlConditions()
+{
+    // SoC saves don't hold the XML conditions of a task: the original engine read them
+    // again from game_tasks.xml when it loaded a task
+    auto& gameTaskXml = CGameTaskManager::m_gameTaskXml;
+    if (gameTaskXml.IsErrored())
+        return;
+
+    const XML_NODE task_node = gameTaskXml.NavigateToNodeWithAttribute("game_task", "id", m_ID.c_str());
+    if (!task_node)
+        return;
+
+    gameTaskXml.SetLocalRoot(task_node);
+    const int tag_num = std::min<int>(gameTaskXml.GetNodesNum(task_node, "objective"), GetObjectivesCount());
+    for (int i = 0; i < tag_num; i++)
+    {
+        const XML_NODE l_root = gameTaskXml.NavigateToNode("objective", i);
+        gameTaskXml.SetLocalRoot(l_root);
+        Objective(static_cast<TASK_OBJECTIVE_ID>(i)).LoadConditions(gameTaskXml, l_root);
         gameTaskXml.SetLocalRoot(task_node);
     }
     gameTaskXml.SetLocalRoot(gameTaskXml.GetRoot());
@@ -512,7 +563,8 @@ void SGameTaskObjective::ChangeStateCallback()
 
 void CGameTask::ChangeStateCallback()
 {
-    if (!m_Objectives.empty())
+    // SoC's actor binder always expects (task, objective, state)
+    if (!m_Objectives.empty() || ShadowOfChernobylMode)
     {
         SGameTaskObjective::ChangeStateCallback();
         return;
@@ -569,7 +621,7 @@ bool SGameTaskObjective::CheckFunctions(const task_state_functors& v) const
     for (; it != v.end(); ++it)
     {
         if ((*it).is_valid())
-            res = (*it)(m_parent->m_ID.c_str());
+            res = CallFunc(*it);
         if (!res)
             break;
     }
@@ -582,8 +634,16 @@ void SGameTaskObjective::CallAllFuncs(const task_state_functors& v)
     for (; it != v.end(); ++it)
     {
         if ((*it).is_valid())
-            (*it)(m_parent->m_ID.c_str());
+            CallFunc(*it);
     }
+}
+
+bool SGameTaskObjective::CallFunc(const luabind::functor<bool>& func) const
+{
+    // SoC scripts tell the objectives apart by their index (task_manager.task_complete)
+    if (ShadowOfChernobylMode)
+        return func(m_parent->m_ID.c_str(), m_idx);
+    return func(m_parent->m_ID.c_str());
 }
 
 void SGameTaskObjective::SendInfo(const xr_vector<shared_str>& v)
@@ -678,6 +738,13 @@ void CGameTask::load(IReader& stream)
         load_data(m_Objectives[i], stream);
     }
 
+    if (ShadowOfChernobylMode)
+    {
+        LoadXmlConditions();
+        // Script added objectives need their functors too
+        for (SGameTaskObjective& objective : m_Objectives)
+            objective.CommitScriptHelperContents();
+    }
     CommitScriptHelperContents();
     CreateMapLocation(true);
 }
